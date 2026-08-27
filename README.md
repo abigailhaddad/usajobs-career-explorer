@@ -57,21 +57,20 @@ changes" and nothing looks wrong.
 ## How the scoring works
 
 Everything runs in the browser. The page carries the 25 questions and, for each
-of 302 occupations, 25 numbers saying how central each kind of work is to that
-job. Your answers become 25 numbers too. Both get standardized and correlated,
-highest first.
+of 302 occupations, 25 ratings saying how central each kind of work is to that
+job. Your answers become 25 numbers too, and occupations get ranked by how
+closely their ratings track your answers.
 
 The 302 occupations come from the official tool. They cover 93% of federal
-hiring since 2021 and almost none of Pathways — most student and intern hiring
-lands in occupations the official tool never profiled, so neither tool can rank
-them.
+hiring since 2021, but hardly any Pathways hiring: most student and intern hires
+land in occupations the official tool never rated, so this one can't rank them
+either.
 
 ## What's on a card
 
-**Hires** are OPM/EHRI accessions from 2021 on. Entry level means grades 01–09
-on GS-style pay plans plus wage-grade trades; permanent means tenure groups 1
-and 2. Banded pay plans are excluded from that test rather than counted, since a
-low number there means senior.
+**Hires** are OPM/EHRI accessions from 2021 on, counted as permanent hires at
+entry grade — permanent meaning tenure groups 1 and 2. Banded pay plans are left
+out of that count, because on those a low band number means senior, not junior.
 
 **Openings** come from the `usajobs_historical` R2 bucket, counting only
 postings the public, students, or recent graduates can apply to. It counts
@@ -93,8 +92,8 @@ matter what you answer, so they always come up together and the quiz can't tell
 you which one suits you better.
 
 The official questions leave a lot of jobs in that state. Across the 175
-occupations doing most of the entry-level hiring, its 32 questions put the
-biggest hirers at 0.17 average similarity, and ten pairs come out
+occupations doing most of the entry-level hiring, those 32 questions put the
+biggest hirers at 0.17 average similarity to each other, and ten pairs come out
 interchangeable:
 
 | pair | similarity |
@@ -104,40 +103,41 @@ interchangeable:
 | Nursing assistant / Practical nurse | 0.81 |
 
 Nursing assistant and practical nurse hire about the same number of people, and
-one of them needs an LPN diploma. That's a choice someone might want help with.
+one of them needs an LPN diploma. Someone deciding between the two would want the
+quiz to tell them apart, and it can't.
 
-So stage 5 writes its own questions and scores them the same way: rate every
-occupation 0–4 on every question, correlate the profiles of the 30 biggest
-hirers, average. Lower means the questions pull jobs apart. Same measure, same
-occupations, 0.17 down to 0.03.
+So stage 5 writes its own questions, and scores them the same way: rate every
+occupation 0 to 4 on every question, then compare the 30 biggest hirers to each
+other and average how alike they come out. A lower number means the questions
+pull jobs apart. On the same occupations, that goes from 0.17 to 0.03.
 
-That measure alone is easy to cheat. Fewer questions gives occupations less to
-disagree about, which improves the score — a 6-question version beat the
-21-question one. But between them, thousands of simulated quiz-takers got only
-32 different top matches. The questions separated the occupations without giving
-different people different results.
+That number can improve while the quiz gets worse. A 6-question version scored
+better than the 21-question one, because fewer questions give occupations less
+to differ on. It also gave thousands of simulated quiz-takers only 32 different
+top matches between them — it separated the occupations without giving different
+people different results.
 
 So variety is checked separately, as pass or fail: simulate 3,000 takers, count
 how many occupations turn up as someone's top match, and reject any question set
-that loses more than 5% of that. This was originally part of the score, weighted
-against separation, but the optimizer kept trading results away for a better
-similarity number.
+that loses more than 5% of that. This started out as part of the score, weighted
+against separation, and the scoring kept preferring question sets that gave up
+variety to get a better similarity number.
 
-The rest is pruning and retries. Drop questions that occupations answer the same
-way, and drop one of any pair that duplicates the other. Generate three separate
-sets and keep whichever scores best, since asking the model for questions gives
-different results each time while re-rating the same questions is stable. Then
-send the pairs that are still tied back to the model, asking for questions that
-would split those specific pairs, and keep that round only if the score
-improves.
+The rest is pruning and retries. Drop questions that nearly every occupation
+gets the same rating on, and drop one of any two questions that measure the same
+thing. Generate three separate sets and keep whichever scores best, since asking
+the model for questions gives different results each time, while re-rating the
+same questions is stable. Then send the pairs that are still tied back to the
+model, asking for questions that would split those specific pairs, and keep that
+round only if the score improves.
 
 The site ends up with 25 questions, 14 specific and 11 broad. The specific ones
 separate the big hirers well, but three of twelve kinds of work had no question
 that spoke to them at all; adding broad questions brings that down to one. Broad
-questions push the similarity number back up, because more occupations answer
-them the same way. Everything else improved: ties among the big hirers fell from
-around 20 to around 7, and the number of occupations that can come up as
-someone's top match went from roughly 150 to 210.
+questions push the similarity number back up, because more occupations get
+similar ratings on them. Everything else improved: ties among the big hirers
+fell from around 20 to around 7, and the number of occupations that can come up
+as someone's top match went from roughly 150 to 210.
 
 `instrument/` holds the scripts behind that final set. `s4_build` uses
 `mixed_questions.parquet` if it's there, falls back to stage 5's own output, and
