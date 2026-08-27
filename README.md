@@ -84,13 +84,15 @@ but you can't do the job without an LPN diploma.
 
 ## Writing the questions
 
-Your answers can only sort jobs that disagree with each other. Two occupations
-with near-identical profiles can't be separated by anything you answer — they
-rise and fall together, in arbitrary order.
+The questions only help if occupations are rated differently on them. Two jobs
+rated nearly the same across all 25 questions get nearly the same match score no
+matter what you answer, so they always come up together and the quiz can't tell
+you which one suits you better.
 
-The official questions leave a lot of jobs there. Across the 175 occupations
-doing most of the entry-level hiring, its 32 questions put the biggest hirers at
-0.17 average similarity, and ten pairs come out interchangeable:
+The official questions leave a lot of jobs in that state. Across the 175
+occupations doing most of the entry-level hiring, its 32 questions put the
+biggest hirers at 0.17 average similarity, and ten pairs come out
+interchangeable:
 
 | pair | similarity |
 |---|---|
