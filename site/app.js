@@ -76,7 +76,7 @@ function answer(value) {
 const FLAG_TONE = {
   no_open_door: 'f-bad', dormant: 'f-bad', bulk_hiring: 'f-bad',
   nothing_open_now: 'f-warn', thin: 'f-warn', degree_required: 'f-warn',
-  hiring_fell: 'f-bad', credential_required: 'f-warn',
+  credential_required: 'f-warn',
   age_cap: 'f-warn', skews_older: 'f-warn',
 };
 

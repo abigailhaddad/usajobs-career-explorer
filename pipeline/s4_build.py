@@ -11,7 +11,7 @@ from datetime import date
 import numpy as np
 import pandas as pd
 
-from .common import emit, pct
+from .common import emit, pct, titlecase
 from .config import CURRENT_JOBS_YEARS, DATA, HIRE_MONTHS, SITE
 
 
@@ -29,11 +29,6 @@ def _flags(r):
         f.append(("nothing_open_now", "Nothing open right now, but it posts from time to time"))
     if r.hires_per_year >= 100 and r.ann_reachable <= 5:
         f.append(("bulk_hiring", "Hires in bulk waves rather than ordinary postings — easy to miss"))
-    # A collapsing market matters more than the pooled average it hides.
-    if r.hires_best12 >= 200 and pd.notna(r.trend_vs_peak) and r.trend_vs_peak < 40:
-        f.append(("hiring_fell",
-                  f"Hired {r.hires_last12:,} at entry level in the last 12 months, "
-                  f"down from {r.hires_best12:,} at its peak"))
     if r.hires_per_year < 50:
         f.append(("thin", "Almost no permanent entry hires, governmentwide"
                   if r.hires_per_year < 1 else
@@ -292,8 +287,9 @@ def run():
             "series": r.series, "series_name": r.series_name,
             "profile": profiles[r.series],
             "ce_description": r.ce_description,
-            "common_titles": json.loads(r.common_titles),
-            "live_jobs": json.loads(r.live_jobs),
+            "common_titles": [titlecase(x) for x in json.loads(r.common_titles)],
+            "live_jobs": [{**j, "title": titlecase(j["title"])}
+                          for j in json.loads(r.live_jobs)],
             "flags": json.loads(r.flags),
             "status": r.status,
             "hires_entry_perm": int(r.hires_entry_perm),

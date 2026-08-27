@@ -4,6 +4,7 @@ Every stage writes one parquet through `emit`. The runner snapshots the previous
 outputs to data/.prev first, so after a run `diff_all` can say exactly what moved.
 """
 import json
+import re
 import shutil
 from datetime import datetime, timezone
 
@@ -136,3 +137,46 @@ def write_changelog(sections: list[str], meta: dict):
     (DATA / "CHANGES.md").write_text("\n".join(lines) + "\n")
     (DATA / "run_meta.json").write_text(json.dumps({"run_at": stamp, **meta}, indent=2, default=str))
     print("\n".join(lines))
+
+
+# --- presentation ---------------------------------------------------------
+# USAJOBS position titles arrive in a mix of cases: "Interdisciplinary" from one
+# agency, "INTERDISCIPLINARY" from the next. Shouting on a results card reads as
+# a bug, so all-caps titles get cased down. Titles that already carry lowercase
+# are left exactly as posted.
+_KEEP_UPPER = {
+    "IT", "HR", "GS", "WG", "WL", "VA", "DOD", "DOJ", "DHS", "FBI", "DEA", "ATF",
+    "ICE", "CBP", "TSA", "IRS", "EPA", "USDA", "NASA", "FAA", "OIG", "CID", "JAG",
+    "EMT", "BLS", "ALS", "RN", "LPN", "LVN", "CNA", "MRI", "CT", "ICU", "ER",
+    "PA", "NP", "MD", "DO", "PT", "OT", "PHS", "DHA", "SES", "STEM", "LEO", "EOD",
+    "HVAC", "CNC", "NDT", "GIS", "QA", "QC", "EEO", "FOIA", "CIO", "ISSO", "SCI",
+    "TS", "CDL", "ATC", "CONUS", "OCONUS", "US", "USA", "USAF", "USMC", "USCG",
+    "USCIS", "AFSC", "K9", "ADP", "IED", "UAS", "POL", "AC",
+    "II", "III", "IV", "VI", "VII", "VIII", "IX", "XI", "XII",
+}
+_KEEP_LOWER = {"a", "an", "and", "as", "at", "by", "for", "from", "in", "of",
+               "on", "or", "the", "to", "with"}
+
+
+def titlecase(text: str) -> str:
+    """Case down a SHOUTED job title, keeping acronyms and roman numerals."""
+    if not text or any(c.islower() for c in text):
+        return text
+
+    def word(w, first):
+        core = w.strip("().,/-&'")
+        if not core:
+            return w
+        if core in _KEEP_UPPER:
+            return w
+        lowered = w.lower()
+        if not first and lowered.strip("().,/-&'") in _KEEP_LOWER:
+            return lowered
+        # Recase each alphabetic run so "BLS/HAZMAT" and "MULTI-MEDIA" both work.
+        return re.sub(r"[A-Za-z']+",
+                      lambda m: (m.group(0).upper() if m.group(0).upper() in _KEEP_UPPER
+                                 else m.group(0).capitalize()),
+                      lowered)
+
+    parts = text.split(" ")
+    return " ".join(word(w, i == 0) for i, w in enumerate(parts))
