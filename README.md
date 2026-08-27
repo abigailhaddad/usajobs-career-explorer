@@ -13,7 +13,7 @@ Not affiliated with USAJOBS or OPM. The official tool is at
 ## Run it
 
 ```bash
-python run.py        # rebuild all data (stages 1,2,3,6,7,4); writes data/CHANGES.md
+python run.py        # rebuild all data; writes data/CHANGES.md
 python serve.py      # open the quiz at http://localhost:8899
 ```
 
@@ -33,13 +33,11 @@ flowchart TD
     CE[USAJOBS Career Explorer<br/>page HTML] --> S1
     R2[usajobs_historical<br/>R2 bucket] --> S2
     HF[OPM/EHRI accessions<br/>HuggingFace] --> S3
-    SEP[OPM separations<br/>HuggingFace] --> S6
     STD[OPM qualification<br/>standards cache] --> S7
 
     S1[s1 quiz<br/>302 occupations] --> S4
     S2[s2 openings<br/>what's posted, what it asks for] --> S4
     S3[s3 hires<br/>who actually got hired] --> S4
-    S6[s6 retention<br/>who left, how fast] --> S4
     S7[s7 standards<br/>is a degree required] --> S4
 
     S4[s4 build<br/>one row per occupation → data.json] --> SITE[site/]
@@ -49,7 +47,7 @@ flowchart TD
     S5 -.the 25 questions.-> S4
 ```
 
-Stages 6 and 7 run before 4 because stage 4 folds them into one table. If a
+Stage 7 runs before 4 because stage 4 folds it into one table. If a
 stage fails it keeps its previous output and the run exits non-zero, and
 `CHANGES.md` says which tables are stale — otherwise a broken fetch reads as "no
 changes" and nothing looks wrong.
@@ -83,11 +81,6 @@ postings the public, students, or recent graduates can apply to — not the ones
 restricted to current federal employees. The card counts openings and hires,
 never announcements, because a single announcement can carry hundreds of jobs.
 
-**Retention** is the share of people leaving an occupation who quit voluntarily
-within two years. It's a share of departures, not a rate, so an occupation with
-an older workforce looks good for reasons that have nothing to do with how new
-hires are treated.
-
 **Whether you need a degree** comes from four sources combined: the posting
 text, OPM's published standard, what entry-level hires held, and what hires at
 any grade held. None of them works alone — postings often don't restate the
@@ -103,16 +96,31 @@ can't do the job without an LPN diploma. "No degree needed" was the wrong answer
 
 ### The problem
 
-An interest quiz is only useful if different jobs produce different answers. The
-official one mostly doesn't. Score its 32 questions against the 30 biggest
-entry-level hirers and they come out at 0.19 average similarity to each other —
-and some pairs are worse than that. Criminal investigator and customs
-interdiction officer sit at 0.99, essentially the same job as far as the
-questions can tell, even though one hires thousands of people and the other
-hires almost none. When two occupations score the same, which one you're shown
-first is a coin flip.
+Your answers can only sort jobs that disagree with each other. Every occupation
+carries a profile — how central each kind of work is to it — and your answers get
+matched against those profiles. Where two occupations have nearly the same
+profile, there's no answer you could give that would separate them. They rise
+and fall together, and the order between them is arbitrary.
 
-So stage 5 writes its own questions and checks whether they do better.
+The official questions leave a lot of jobs in that state. Across the 175
+occupations doing most of the entry-level hiring, those 32 questions put the
+biggest hirers at 0.17 average similarity to each other — lower would mean the
+questions pull them apart — and ten pairs come out close enough to be
+interchangeable:
+
+| pair | similarity |
+|---|---|
+| Criminal investigating / Customs and border protection | 0.98 |
+| Border patrol enforcement / Criminal investigating | 0.94 |
+| Correctional officer / Police | 0.83 |
+| Nursing assistant / Practical nurse | 0.81 |
+
+Those are real choices someone might want the quiz to help them make. Nursing
+assistant and practical nurse hire about the same number of people, and one of
+them needs an LPN diploma. The questions can't tell you which is which.
+
+So stage 5 writes its own questions and checks whether they separate jobs
+better. They do: same measure, same occupations, 0.17 down to 0.03.
 
 ### How we tell whether a question set is working
 
