@@ -1,9 +1,12 @@
-# USAJOBS Career Explorer, rebuilt
+# Entry-level federal career quiz
 
-A federal career quiz. Answer 25 questions about the kind of work you'd want,
-get occupations ranked by fit — each one showing how many people it hired at
-entry level last year, how many jobs are open to the public now, and what you'd
-need to qualify.
+A rebuild of the USAJOBS Career Explorer, aimed at entry-level hiring. Answer 25
+questions about the kind of work you'd want, get federal occupations ranked by
+fit — each one showing how many people it hired at entry level last year, how
+many of those jobs are open to the public now, and what you'd need to qualify.
+
+Everything on a card is about entry-level hiring: grades 01–09 on GS-style pay
+plans, plus wage-grade trades.
 
 Live at [usajobs-career-explorer.abigailhaddad.com](https://usajobs-career-explorer.abigailhaddad.com).
 
