@@ -106,25 +106,33 @@ occupation 0–4 on every question, correlate the profiles of the 30 biggest
 hirers, average. Lower means the questions pull jobs apart. Same measure, same
 occupations, 0.17 down to 0.03.
 
-That measure alone is gameable. A 6-question set beat the 21-question one while
-funneling thousands of simulated takers onto 32 possible top matches — the jobs
-separated, the people not. So variety is a hard floor rather than another
-weight: simulate 3,000 takers, count how many distinct occupations come out on
-top, and throw out any set that gives up more than 5% of that. It was a weighted
-term first, and the optimizer gamed it twice.
+That measure alone is easy to cheat. Fewer questions gives occupations less to
+disagree about, which improves the score — a 6-question version beat the
+21-question one. But between them, thousands of simulated quiz-takers got only
+32 different top matches. The questions separated the occupations without giving
+different people different results.
 
-The rest is pruning and retries. Drop questions that don't discriminate or that
-duplicate another. Generate three independent sets and keep the best, since
-generating is unstable run to run and rating isn't. Feed the still-tied pairs
-back for questions aimed at exactly those, keeping a round only if the score
+So variety is checked separately, as pass or fail: simulate 3,000 takers, count
+how many occupations turn up as someone's top match, and reject any question set
+that loses more than 5% of that. This was originally part of the score, weighted
+against separation, but the optimizer kept trading results away for a better
+similarity number.
+
+The rest is pruning and retries. Drop questions that occupations answer the same
+way, and drop one of any pair that duplicates the other. Generate three separate
+sets and keep whichever scores best, since asking the model for questions gives
+different results each time while re-rating the same questions is stable. Then
+send the pairs that are still tied back to the model, asking for questions that
+would split those specific pairs, and keep that round only if the score
 improves.
 
-The site ends up with 25 questions, 14 specific and 11 broad. Specific questions
-separate the big hirers well but left three of twelve kinds of work with nothing
-to react to; the broad ones bring that down to one. They make the raw similarity
-worse by design, and in exchange ties among the big hirers fell from around 20
-to around 7, and the number of occupations that can be someone's top match went
-from roughly 150 to 210.
+The site ends up with 25 questions, 14 specific and 11 broad. The specific ones
+separate the big hirers well, but three of twelve kinds of work had no question
+that spoke to them at all; adding broad questions brings that down to one. Broad
+questions push the similarity number back up, because more occupations answer
+them the same way. Everything else improved: ties among the big hirers fell from
+around 20 to around 7, and the number of occupations that can come up as
+someone's top match went from roughly 150 to 210.
 
 `instrument/` holds the scripts behind that final set. `s4_build` uses
 `mixed_questions.parquet` if it's there, falls back to stage 5's own output, and
