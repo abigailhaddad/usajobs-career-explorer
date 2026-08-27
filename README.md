@@ -106,7 +106,7 @@ Nursing assistant and practical nurse hire about the same number of people, and
 one of them needs an LPN diploma. Someone deciding between the two would want the
 quiz to tell them apart, and it can't.
 
-So stage 5 writes its own questions, and scores them the same way: rate every
+Stage 5 writes its own questions, and scores them the same way: rate every
 occupation 0 to 4 on every question, then compare the 30 biggest hirers to each
 other and average how alike they come out. A lower number means the questions
 pull jobs apart. On the same occupations, that goes from 0.17 to 0.03.
@@ -117,7 +117,7 @@ to differ on. It also gave thousands of simulated quiz-takers only 32 different
 top matches between them — it separated the occupations without giving different
 people different results.
 
-So variety is checked separately, as pass or fail: simulate 3,000 takers, count
+Variety is checked separately, as pass or fail: simulate 3,000 takers, count
 how many occupations turn up as someone's top match, and reject any question set
 that loses more than 5% of that. This started out as part of the score, weighted
 against separation, and the scoring kept preferring question sets that gave up
