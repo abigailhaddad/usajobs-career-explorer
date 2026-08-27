@@ -59,7 +59,7 @@ changes" and nothing looks wrong.
 Everything runs in the browser. The page carries the 25 questions and, for each
 of 302 occupations, 25 ratings saying how central each kind of work is to that
 job. Your answers become 25 numbers too, and occupations get ranked by how
-closely their ratings track your answers.
+closely related your answers and their ratings are.
 
 The 302 occupations come from the official tool. They cover 93% of federal
 hiring since 2021, but hardly any Pathways hiring: most student and intern hires

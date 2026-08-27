@@ -176,8 +176,8 @@ function card(entry, position) {
       </table>
     </details>
     <details><summary>How this job was rated, 0 to 4</summary>
-      <p class="muted">0 means that kind of work is not part of this job, 4 means
-      it is the core of it. Your answers are matched against these numbers.</p>
+      <p class="muted">0 means this kind of work isn't part of the job. 4 means
+      it's most of what the job is.</p>
       <table class="ratings">${rated}</table>
     </details>
     ${live}

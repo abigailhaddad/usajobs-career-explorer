@@ -26,29 +26,23 @@
 
     <details class="method">
       <summary>How this works</summary>
-      <p>Every one of the 302 occupations carries a rating from 0 to 4 on each question:
-      0 means that kind of work is not part of the job, 4 means it is the core of it. Your
-      answers become 25 numbers too, and occupations are ranked by how closely the two sets
-      move together. You can see the ratings behind any result on its card.</p>
+      <p>You rate 25 kinds of work by how much you'd want to do them.</p>
 
-      <p>The ratings are a language model's reading of each occupation, based on real job
-      postings rather than job titles. They are a judgement, not a measurement, and the
-      thing that gets tested is whether the questions tell occupations <em>apart</em> —
-      never whether the ratings are right.</p>
+      <p>Every job here has its own score for those same 25 things, from 0 to 4.
+      A 0 means that kind of work isn't part of the job. A 4 means it's most of
+      what the job is. We compare your answers to those scores and show you the
+      closest matches. You can see the scores for any job on its card.</p>
 
-      <p>The questions are written and then measured the same way. A question everything
-      scores the same on is useless, and two occupations rated alike can never be separated
-      by any answer you give. The official 32 questions leave the biggest entry-level
-      hirers at 0.17 average similarity to each other; these 25 get that to 0.07.</p>
+      <p>An AI wrote those scores, reading real job postings for each one rather
+      than going off the job title. We haven't checked every job by hand, so
+      treat the scores as a starting point and not the last word.</p>
 
-      <p>Everything else on a card comes from federal records: hires are OPM personnel data
-      from 2021 on, averaged per year; openings are current USAJOBS postings, counting only
-      those open to the public, students or recent graduates; the education requirement
-      combines posting text, OPM's published standard, and what people hired into the job
-      actually held.</p>
+      <p>The rest of what you see on a card comes from government records: how
+      many people the job hires in a year, how many openings are posted right
+      now, and what education it asks for.</p>
 
       <p><a href="https://github.com/abigailhaddad/usajobs-career-explorer" target="_blank" rel="noopener">Code
-      and full methodology on GitHub</a>.</p>
+      and full details on GitHub</a>.</p>
     </details>
   </section>
 
@@ -83,6 +77,6 @@
     <div id="cards"></div>
   </section>
 </main>
-<script src="app.js?v=1787871271"></script>
+<script src="app.js?v=1787871402"></script>
 </body>
 </html>
