@@ -14,6 +14,7 @@ analysis/
 # dev artifacts
 .playwright-mcp/
 *.png
+*.jpg
 .vercel
 .wrangler/
 
