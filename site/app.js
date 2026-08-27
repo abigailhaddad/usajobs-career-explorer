@@ -49,6 +49,9 @@ function showQuestion() {
   $('counter').textContent = `Question ${state.index + 1} of ${state.questions.length}`;
   $('progress').style.width = `${(state.index / state.questions.length) * 100}%`;
   $('back').disabled = state.index === 0;
+  // Once every question has an answer, changing one shouldn't mean clicking
+  // through all the rest to get back to the results.
+  $('done').hidden = state.answers.filter(Boolean).length < state.questions.length;
 
   const opts = $('opts');
   opts.replaceChildren();  // fresh buttons each time, so old listeners go with them
@@ -218,8 +221,18 @@ async function boot() {
     $('quiz').hidden = false;
     showQuestion();
   });
+  $('done').addEventListener('click', showResults);
   $('back').addEventListener('click', () => {
     if (state.index > 0) { state.index -= 1; showQuestion(); }
+  });
+  // Back to the last question with every answer intact, so one answer can be
+  // changed without redoing the quiz. Start over is the one that wipes them.
+  $('edit').addEventListener('click', () => {
+    state.index = state.questions.length - 1;
+    clearAnswersFromURL();
+    $('results').hidden = true;
+    $('quiz').hidden = false;
+    showQuestion();
   });
   $('retake').addEventListener('click', () => {
     state.answers = [];
