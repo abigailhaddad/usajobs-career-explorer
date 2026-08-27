@@ -111,7 +111,7 @@ function card(entry, position) {
     <p class="muted">${s.ce_description}</p>
     <div>${flags}</div>
     <div class="facts">
-      <div class="fact"><b>${num(s.hires_last12)}</b><span class="muted">hired at entry level in the last 12 months</span></div>
+      <div class="fact"><b>${num(s.hires_per_year)}</b><span class="muted">hired at entry level in a typical year</span></div>
       <div class="fact"><b>${num(s.reachable_open_now)}</b><span class="muted">openings anyone can apply to right now</span></div>
     </div>
     <details><summary>Job titles and requirements</summary>
@@ -171,10 +171,10 @@ async function boot() {
   state.questions = data.questions;
   state.series = data.series;
   const g = data.governmentwide || {};
-  if (g.last12) {
+  if (g.per_year) {
     $('trendline').textContent =
-      `Governmentwide, permanent entry-level hiring in the last 12 months was `
-      + `${g.last12.toLocaleString()}.`;
+      `Governmentwide, the federal government hires about `
+      + `${g.per_year.toLocaleString()} people a year at entry level.`;
   }
   const qc = $('qcount');
   if (qc) qc.textContent = data.questions.length;

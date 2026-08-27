@@ -93,26 +93,15 @@ def run():
 
     df["openings_by_state"] = df.openings_by_state.map(norm_states)
 
-    # --- hiring trend ------------------------------------------------------
-    # Trailing 12 months against the best 12-month window in the record.
-    # Monthly, and like-for-like: the data ends mid-year, so comparing the
-    # latest calendar year against full-year peaks halves every ratio and
-    # manufactures a collapse that is partly just a short year.
+    # --- hiring window -----------------------------------------------------
+    # Everything shown is a yearly average, so the only thing needed from the
+    # monthly table is how many months it actually covers. The window is
+    # open-ended, so a fixed divisor of 5 drifts further out of date every run.
     yp = DATA / "hires_by_month.parquet"
     if yp.exists():
         y = pd.read_parquet(yp)
-        wide = (y.pivot_table(index="series", columns="month", values="entry_hires",
-                              aggfunc="sum", fill_value=0)
-                 .reindex(df.series).fillna(0))
-        months = sorted(wide.columns)
-        last12 = wide[months[-12:]].sum(axis=1).to_numpy()
-        # best full 12-month window, so the comparison is 12 months vs 12 months
-        best12 = np.max([wide[months[i:i + 12]].sum(axis=1).to_numpy()
-                         for i in range(len(months) - 11)], axis=0)
+        months = sorted(y.month.unique())
         df["window_end"] = months[-1]
-        df["hires_last12"] = last12.astype(int)
-        df["hires_best12"] = best12.astype(int)
-        df["trend_vs_peak"] = pct(last12, best12)
         by_year = (y.assign(year=y.month.str[:4])
                     .pivot_table(index="series", columns="year", values="entry_hires",
                                  aggfunc="sum", fill_value=0)
@@ -120,12 +109,10 @@ def run():
         df["hires_by_year"] = [json.dumps({str(k): int(v) for k, v in r.items()})
                                for _, r in by_year.iterrows()]
         hire_years = len(months) / 12
-        print(f"  hiring trend over {len(months)} months, "
-              f"trailing 12 ends {months[-1]}")
+        print(f"  hiring averaged over {len(months)} months, ending {months[-1]}")
     else:
         print("  !! data/hires_by_month.parquet missing — run stage 3")
-        for c, v in (("window_end", ""), ("hires_last12", 0), ("hires_best12", 0),
-                     ("trend_vs_peak", np.nan), ("hires_by_year", "{}")):
+        for c, v in (("window_end", ""), ("hires_by_year", "{}")):
             df[c] = v
         hire_years = 5
 
@@ -270,9 +257,10 @@ def run():
         m = y.groupby("month").entry_hires.sum().sort_index()
         mo = list(m.index)
         if len(mo) >= 12:
-            wins = [int(m[mo[i:i + 12]].sum()) for i in range(len(mo) - 11)]
-            gov = {"last12": wins[-1],
-                   "last12_start": mo[-12], "last12_end": mo[-1]}
+            # Same divisor as each occupation's hires_per_year, so the
+            # governmentwide figure and the card figures are the same measure.
+            gov = {"per_year": int(round(int(m.sum()) / (len(mo) / 12))),
+                   "window_start": mo[0], "window_end": mo[-1]}
 
     payload = {
         "built": date.today().isoformat(),
@@ -296,8 +284,6 @@ def run():
             "hires_per_year": int(r.hires_per_year),
             "young_hires_per_year": int(r.young_hires_per_year),
             "young_hires_total": int(r.young_hires_total),
-            "hires_last12": int(r.hires_last12),
-            "trend_vs_peak": None if pd.isna(r.trend_vs_peak) else float(r.trend_vs_peak),
             "hires_by_year": json.loads(r.hires_by_year),
             "pct_entry_young": None if pd.isna(r.pct_entry_young) else float(r.pct_entry_young),
             "reachable_open_now": int(r.reachable_open_now),
