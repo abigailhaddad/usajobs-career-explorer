@@ -75,14 +75,6 @@ def run():
     else:
         df["opm_degree_required"] = pd.NA
 
-    rp = DATA / "retention.parquet"
-    if rp.exists():
-        df = df.merge(pd.read_parquet(rp), on="series", how="left")
-    else:
-        print("  !! data/retention.parquet missing — run stage 6 for churn figures")
-        for c in ("early_quit_share_of_exits", "early_quit_share_of_quits",
-                  "median_years_at_quit"):
-            df[c] = np.nan
     num = [c for c in df.columns if df[c].dtype.kind in "if"]
     df[num] = df[num].fillna(0)
     df["status"] = df.status.fillna("never_reachable")
@@ -329,8 +321,6 @@ def run():
             "pct_license_or_cert": float(r.pct_license_or_cert),
             "pct_clearance": float(r.pct_clearance),
             "pct_age_limit": float(r.pct_age_limit),
-            "early_quit_share": None if pd.isna(r.early_quit_share_of_exits) else float(r.early_quit_share_of_exits),
-            "median_years_at_quit": None if pd.isna(r.median_years_at_quit) else float(r.median_years_at_quit),
             "job_url": r.job_url,
         } for r in df.itertuples()],
     }

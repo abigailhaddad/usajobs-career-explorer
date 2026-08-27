@@ -1,5 +1,7 @@
-# Pipeline run — 2026-08-27 21:08 UTC
+# Pipeline run — 2026-08-27 21:35 UTC
 
+- snapshotted: 17 previous tables
+- stage 4 (build): ok
 
 ## Changes since the previous run
 
@@ -23,10 +25,6 @@
 - rows: 302 → 302
 - no changes
 
-### retention
-- rows: 672 → 672
-- no changes
-
 ### opm_standards
 - rows: 415 → 415
 - no changes
@@ -37,10 +35,6 @@
 
 ### hires_by_month
 - rows: 28,841 → 28,841
-- no changes
-
-### retention_by_year
-- rows: 4,176 → 4,176
 - no changes
 
 ### generated_questions

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run the pipeline end to end and report what changed.
 
-    python run.py              # stages 1-4, then diff against the previous run
+    python run.py              # fetch and rebuild, then diff against the previous run
     python run.py --stages 2,4 # re-run only some stages (others keep prior output)
     python run.py --diff-only  # no fetching; just re-diff what is on disk
     python run.py --stages 5   # question generation (LLM; costs money, cached)
@@ -13,16 +13,15 @@ import sys
 import traceback
 
 from pipeline import (s1_quiz, s2_openings, s3_hiring, s4_build, s5_questions,
-                      s6_retention, s7_standards)
+                      s7_standards)
 from pipeline.common import diff_table, snapshot, write_changelog
 
 # Stage 5 is not in the default set: it makes LLM calls. Responses are cached on
 # disk, so re-running it after the first time is free and deterministic.
 STAGES = {1: ("quiz", s1_quiz.run), 2: ("openings", s2_openings.run),
           3: ("hires", s3_hiring.run), 4: ("build", s4_build.run),
-          5: ("questions", s5_questions.run), 6: ("retention", s6_retention.run),
-          7: ("standards", s7_standards.run)}
-DEFAULT_STAGES = "1,2,3,6,7,4"   # 6 and 7 before 4: the fact table folds both in
+          5: ("questions", s5_questions.run), 7: ("standards", s7_standards.run)}
+DEFAULT_STAGES = "1,2,3,7,4"   # 7 before 4: the fact table folds it in
 
 # (table, key, columns whose movement is worth calling out)
 WATCH = [
@@ -34,11 +33,9 @@ WATCH = [
     ("hires", "series", ["hires_entry_perm", "hires_new"]),
     ("series_facts", "series", ["flag_count", "status", "hires_entry_perm",
                                 "reachable_open_now", "pct_degree_required"]),
-    ("retention", "series", ["early_quits", "early_quit_share_of_exits"]),
     ("opm_standards", "series", ["opm_degree_required"]),
     ("hires_by_state", ("series", "state"), ["entry_hires"]),
     ("hires_by_month", ("series", "month"), ["entry_hires", "new_hires"]),
-    ("retention_by_year", ("series", "year"), ["early_quits"]),
     ("generated_questions", "question_id", ["text", "axis", "hiring_weighted_var"]),
     ("generated_profiles", "series", ["series_name"]),
 ]
