@@ -61,6 +61,38 @@ function showQuestion() {
   });
 }
 
+// --- shareable answers -----------------------------------------------------
+// Answers are 1-5, one digit each, so a whole run fits in a readable query
+// string: ?a=5235412534...  Nothing else is encoded; the results are rebuilt by
+// re-scoring, not stored.
+
+function answersToParam(answers) {
+  return answers.join('');
+}
+
+// Returns an array of answers, or null when the string cannot be trusted:
+// wrong length (the question set changed since the link was made) or a digit
+// outside the scale. A stale link starts the quiz over rather than scoring
+// against questions the sender never saw.
+function answersFromParam(raw, expected) {
+  if (!raw || raw.length !== expected) return null;
+  const answers = [...raw].map(Number);
+  if (answers.some((v) => !(v >= 1 && v <= SCALE.length))) return null;
+  return answers;
+}
+
+function putAnswersInURL() {
+  const url = new URL(window.location.href);
+  url.searchParams.set('a', answersToParam(state.answers));
+  history.replaceState(null, '', url);
+}
+
+function clearAnswersFromURL() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('a');
+  history.replaceState(null, '', url);
+}
+
 function answer(value) {
   state.answers[state.index] = value;
   if (state.index < state.questions.length - 1) {
@@ -140,8 +172,10 @@ function card(entry, position) {
 
 function showResults() {
   state.ranked = rank(state.answers);
+  $('intro').hidden = true;
   $('quiz').hidden = true;
   $('results').hidden = false;
+  putAnswersInURL();
   drawCards();
 }
 
@@ -190,10 +224,24 @@ async function boot() {
   $('retake').addEventListener('click', () => {
     state.answers = [];
     state.index = 0;
+    clearAnswersFromURL();
     $('results').hidden = true;
     $('quiz').hidden = false;
     showQuestion();
   });
+  $('copylink').addEventListener('click', async (e) => {
+    await navigator.clipboard.writeText(window.location.href);
+    e.target.textContent = 'Link copied';
+    setTimeout(() => { e.target.textContent = 'Copy link to these results'; }, 2000);
+  });
+
+  // A link with answers in it goes straight to the results.
+  const shared = answersFromParam(
+    new URL(window.location.href).searchParams.get('a'), state.questions.length);
+  if (shared) {
+    state.answers = shared;
+    showResults();
+  }
   $('onlyOpen').addEventListener('change', drawCards);
   $('onlyReal').addEventListener('change', drawCards);
 }
