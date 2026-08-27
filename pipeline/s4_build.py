@@ -242,7 +242,7 @@ def run():
 
     clean = int((df.flag_count == 0).sum())
     print(f"  {clean} of {len(df)} series carry no warning flag")
-    print(f"  open to outsiders at entry grade right now: {int((df.reachable_open_now > 0).sum())}")
+    print(f"  open to the public at entry grade right now: {int((df.reachable_open_now > 0).sum())}")
 
     # ---- site payload -----------------------------------------------------
     SITE.mkdir(parents=True, exist_ok=True)

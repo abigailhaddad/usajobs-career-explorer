@@ -35,9 +35,9 @@ HIRE_MONTHS = ("202101", None)
 STANDARDS_CACHE = Path("~/Documents/repos/opm-educ-req/cache")
 
 # --- definitions used across stages ---------------------------------------
-# Hiring paths an outsider can actually use. USAJOBS emits both a slug and a
+# Hiring paths that do not require already being a federal employee. USAJOBS emits both a slug and a
 # display-name encoding of the same path, so both are listed.
-OUTSIDER_PATHS = ("public", "The public", "student", "Students",
+PUBLIC_PATHS = ("public", "The public", "student", "Students",
                   "graduates", "Recent graduates")
 GRAD_PATHS = ("student", "Students", "graduates", "Recent graduates")
 

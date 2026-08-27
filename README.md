@@ -1,7 +1,7 @@
 # USAJOBS Career Explorer, rebuilt
 
 A federal career-interest quiz that also tells you what each occupation hires,
-what an outsider can apply to right now, what you need to qualify, and how long
+what is open to the public right now, what you need to qualify, and how long
 people stay.
 
 Live at [usajobs-career-explorer.abigailhaddad.com](https://usajobs-career-explorer.abigailhaddad.com).

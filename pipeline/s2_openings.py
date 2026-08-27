@@ -26,7 +26,7 @@ import pandas as pd
 
 from .common import emit
 from .config import (CURRENT_JOBS_YEARS, DATA, ENTRY_MAX_GRADE, GRAD_PATHS, GS_LIKE,
-                     OUTSIDER_PATHS, R2_BASE, TRADE_PLANS)
+                     PUBLIC_PATHS, R2_BASE, TRADE_PLANS)
 
 DORMANT_AFTER_MONTHS = 18
 D = "MatchedObjectDescriptor"
@@ -52,8 +52,8 @@ def run():
     urls = _lst(f"{R2_BASE}/current_jobs_{y}.parquet" for y in CURRENT_JOBS_YEARS)
     con = _connect()
 
-    outsider = (f"EXISTS (SELECT 1 FROM json_each(HiringPaths) h "
-                f"WHERE json_extract_string(h.value,'$.hiringPath') IN ({_lst(OUTSIDER_PATHS)}))")
+    public_path = (f"EXISTS (SELECT 1 FROM json_each(HiringPaths) h "
+                f"WHERE json_extract_string(h.value,'$.hiringPath') IN ({_lst(PUBLIC_PATHS)}))")
     gradpath = (f"EXISTS (SELECT 1 FROM json_each(HiringPaths) h "
                 f"WHERE json_extract_string(h.value,'$.hiringPath') IN ({_lst(GRAD_PATHS)}))")
     series = "json_extract_string(s.value,'$.series')"
@@ -68,14 +68,14 @@ def run():
     entry_grade = (f"((payScale IN ({gs_like}) AND {grade} IS NOT NULL "
                    f"AND {grade} BETWEEN 1 AND {ENTRY_MAX_GRADE})"
                    f" OR payScale IN ({trades}))")
-    reach = f"({outsider}) AND appointmentType='Permanent' AND {entry_grade}"
+    reach = f"({public_path}) AND appointmentType='Permanent' AND {entry_grade}"
     openings = "COALESCE(TRY_CAST(totalOpenings AS INT),1)"
 
     # --- A. counts (no descriptor column touched) --------------------------
     counts = con.execute(f"""
     SELECT {series} AS series,
       count(*)                                        AS ann_total,
-      count(*) FILTER ({outsider})                    AS ann_outsider,
+      count(*) FILTER ({public_path})                    AS ann_public,
       count(*) FILTER ({gradpath})                    AS ann_gradpath,
       count(*) FILTER ({reach})                       AS ann_reachable,
       COALESCE(sum({openings}) FILTER ({reach}),0)    AS openings_reachable,
@@ -239,7 +239,7 @@ def run():
         prev = pd.read_parquet(prev_p)[["series", "first_seen_open", "last_seen_open",
                                         "months_active", "ever_reachable"]]
         cur = cur.merge(prev, on="series", how="outer", suffixes=("", "_prev"))
-        for c in ("ann_total", "ann_outsider", "ann_gradpath", "ann_reachable",
+        for c in ("ann_total", "ann_public", "ann_gradpath", "ann_reachable",
                   "openings_reachable", "open_now", "reachable_open_now", "openings_open_now"):
             cur[c] = cur[c].fillna(0).astype(int)
         cur["first_seen_open"] = cur[["first_seen_open", "first_seen_open_prev"]].min(axis=1)
