@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1787863882">
+<link rel="stylesheet" href="style.css?v=1787871289">
 </head>
 <body>
 <main>
@@ -23,6 +23,33 @@
     This is an independent rebuild of the government's Career Explorer, using its published
     hiring records and job postings. The official tool is at
     <a href="https://www.usajobs.gov/careerexplorer/" target="_blank" rel="noopener">usajobs.gov/careerexplorer</a>.</p>
+
+    <details class="method">
+      <summary>How this works</summary>
+      <p>Every one of the 302 occupations carries a rating from 0 to 4 on each question:
+      0 means that kind of work is not part of the job, 4 means it is the core of it. Your
+      answers become 25 numbers too, and occupations are ranked by how closely the two sets
+      move together. You can see the ratings behind any result on its card.</p>
+
+      <p>The ratings are a language model's reading of each occupation, based on real job
+      postings rather than job titles. They are a judgement, not a measurement, and the
+      thing that gets tested is whether the questions tell occupations <em>apart</em> —
+      never whether the ratings are right.</p>
+
+      <p>The questions are written and then measured the same way. A question everything
+      scores the same on is useless, and two occupations rated alike can never be separated
+      by any answer you give. The official 32 questions leave the biggest entry-level
+      hirers at 0.17 average similarity to each other; these 25 get that to 0.07.</p>
+
+      <p>Everything else on a card comes from federal records: hires are OPM personnel data
+      from 2021 on, averaged per year; openings are current USAJOBS postings, counting only
+      those open to the public, students or recent graduates; the education requirement
+      combines posting text, OPM's published standard, and what people hired into the job
+      actually held.</p>
+
+      <p><a href="https://github.com/abigailhaddad/usajobs-career-explorer" target="_blank" rel="noopener">Code
+      and full methodology on GitHub</a>.</p>
+    </details>
   </section>
 
   <section id="quiz" hidden>
@@ -56,6 +83,6 @@
     <div id="cards"></div>
   </section>
 </main>
-<script src="app.js?v=1787869588"></script>
+<script src="app.js?v=1787871271"></script>
 </body>
 </html>

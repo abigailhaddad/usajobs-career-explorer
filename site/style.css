@@ -75,3 +75,12 @@ font-variant-numeric:tabular-nums}
 td,th{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
 th{font-weight:600;color:var(--mut)}
 .qlabel{color:var(--mut);font-size:.9rem;margin:18px 0 2px}
+
+/* Methodology disclosure on the intro, and the per-card rating tables. */
+details.method { margin-top: 1.5rem; font-size: .9rem; color: #555; }
+details.method summary { cursor: pointer; font-weight: 600; color: #1a4480; }
+details.method p { margin: .75rem 0; line-height: 1.5; }
+table.ratings { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+table.ratings td { padding: .25rem .5rem; vertical-align: top; border-top: 1px solid #eee; }
+table.ratings td.score { width: 2rem; font-weight: 700; text-align: center; color: #1a4480; }
+table.ratings tr:first-child td { border-top: 0; }

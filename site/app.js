@@ -140,6 +140,14 @@ function card(entry, position) {
       : `<details><summary><b>${s.live_jobs.length} openings right now</b></summary>
          <ul class="joblist">${s.live_jobs.map(jobLi).join('')}</ul></details>`;
 
+  // Every occupation carries one 0-4 rating per question. Showing them is the
+  // only way to see why a job ranked where it did, and to disagree with it.
+  const rated = state.questions
+    .map((q, i) => ({ text: q.question_text, score: s.profile[i] }))
+    .sort((a, b) => b.score - a.score)
+    .map((r) => `<tr><td class="score">${r.score}</td><td>${r.text}</td></tr>`)
+    .join('');
+
   el.innerHTML = `
     <h2><span>${s.series_name} <span class="muted">(series ${s.series})</span></span>
         <span class="rank">#${position}</span></h2>
@@ -166,6 +174,11 @@ function card(entry, position) {
             'unknown': '\u2014',
           }[s.tenure_kind]}</td></tr>
       </table>
+    </details>
+    <details><summary>How this job was rated, 0 to 4</summary>
+      <p class="muted">0 means that kind of work is not part of this job, 4 means
+      it is the core of it. Your answers are matched against these numbers.</p>
+      <table class="ratings">${rated}</table>
     </details>
     ${live}
     ${s.live_jobs.length ? '' :
