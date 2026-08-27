@@ -271,7 +271,7 @@ def run():
         mo = list(m.index)
         if len(mo) >= 12:
             wins = [int(m[mo[i:i + 12]].sum()) for i in range(len(mo) - 11)]
-            gov = {"best12": max(wins), "last12": wins[-1],
+            gov = {"last12": wins[-1],
                    "last12_start": mo[-12], "last12_end": mo[-1]}
 
     payload = {
@@ -297,7 +297,6 @@ def run():
             "young_hires_per_year": int(r.young_hires_per_year),
             "young_hires_total": int(r.young_hires_total),
             "hires_last12": int(r.hires_last12),
-            "hires_best12": int(r.hires_best12),
             "trend_vs_peak": None if pd.isna(r.trend_vs_peak) else float(r.trend_vs_peak),
             "hires_by_year": json.loads(r.hires_by_year),
             "pct_entry_young": None if pd.isna(r.pct_entry_young) else float(r.pct_entry_young),

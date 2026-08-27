@@ -171,12 +171,10 @@ async function boot() {
   state.questions = data.questions;
   state.series = data.series;
   const g = data.governmentwide || {};
-  if (g.best12) {
-    const pctOfPeak = Math.round((g.last12 / g.best12) * 100);
+  if (g.last12) {
     $('trendline').textContent =
       `Governmentwide, permanent entry-level hiring in the last 12 months was `
-      + `${g.last12.toLocaleString()} — ${pctOfPeak}% of its best 12 months `
-      + `(${g.best12.toLocaleString()}).`;
+      + `${g.last12.toLocaleString()}.`;
   }
   const qc = $('qcount');
   if (qc) qc.textContent = data.questions.length;
