@@ -1,0 +1,303 @@
+series,series_name
+0007,Correctional officer
+0018,Safety and occupational health management
+0020,Community planning
+0025,Park ranger
+0028,Environmental protection specialist
+0060,Chaplain
+0080,Security administration
+0081,Fire protection and prevention
+0082,United States Marshal Service
+0083,Police
+0085,Security guard
+0086,Security clerical and assistance
+0089,Emergency management
+0090,Guide
+0101,Social science
+0105,Social insurance administration
+0107,Health insurance administration
+0110,Economist
+0130,Foreign affairs
+0132,Intelligence
+0150,Geography
+0170,History
+0180,Psychology
+0185,Social work
+0186,Social services aid and assistant
+0188,Recreation specialist
+0193,Archeology
+0201,Human resources management
+0203,Human resources assistance
+0260,Equal employment opportunity
+0301,Miscellaneous administration and program
+0303,Miscellaneous clerk and assistant
+0305,Mail and file
+0306,Government information
+0308,Records and information management
+0318,Secretary
+0326,Office automation clerical and assistance
+0335,Computer clerk and assistant
+0340,Program management
+0341,Administrative officer
+0342,Support services administration
+0343,Management and program analysis
+0344,Management and program clerical and assistance
+0346,Logistics management
+0360,Equal opportunity compliance
+0391,Telecommunications
+0401,General biological science
+0403,Microbiology
+0404,Biological science technician
+0405,Pharmacology
+0408,Ecology
+0414,Entomology
+0421,Plant protection technician
+0454,Rangeland management
+0456,Wildland fire management
+0457,Soil conservation
+0458,Soil conservation technician
+0460,Forestry
+0462,Forestry technician
+0470,Soil science
+0482,Fishery biology
+0485,Wildlife refuge management
+0486,Wildlife biology
+0501,Financial administration and program
+0503,Financial clerical and assistance
+0505,Financial management
+0510,Accounting
+0511,Auditing
+0512,Internal revenue agent
+0525,Accounting technician
+0526,Tax specialist
+0530,Cash processing
+0540,Voucher examining
+0544,Civilian pay
+0545,Military pay
+0560,Budget analysis
+0561,Budget clerical and assistance
+0570,Financial institution examining
+0580,Credit union examination
+0592,Tax examining
+0601,General health science
+0602,Physician or medical officer
+0603,Physician's assistant
+0610,Nurse
+0620,Practical nurse
+0621,Nursing assistant
+0622,Medical supply aid and technician
+0630,Dietitian and nutritionist
+0631,Occupational therapist
+0633,Physical therapist
+0636,Rehabilitation therapy assistant
+0638,Recreation/creative arts therapist
+0644,Clinical laboratory science
+0645,Medical technician
+0647,Diagnostic radiologic technologist
+0649,Medical instrument technician
+0660,Pharmacist
+0661,Pharmacy technician
+0662,Optometrist
+0665,Speech pathology and audiology
+0668,Podiatrist
+0669,Medical records administration
+0670,Health system administration
+0671,Health system specialist
+0675,Medical records technician
+0679,Medical support assistance
+0680,Dentist and dental officer
+0681,Dental assistant
+0682,Dental hygiene
+0685,Public health program specialist
+0690,Industrial hygiene
+0696,Consumer safety
+0701,Veterinary medical science
+0704,Animal health technician
+0801,General engineering
+0802,Engineering technical
+0806,Materials engineering
+0808,Architecture
+0809,Construction control
+0810,Civil engineering
+0819,Environmental engineering
+0828,Construction analyst
+0830,Mechanical engineering
+0840,Nuclear engineering
+0850,Electrical engineering
+0854,Computer engineering
+0855,Electronics engineering
+0856,Electronics technician
+0858,Biomedical engineering
+0861,Aerospace engineering
+0871,Naval architecture
+0893,Chemical engineering
+0896,Industrial engineering
+0901,General legal and kindred administration
+0905,General attorney
+0930,Hearings and appeals
+0950,Paralegal specialist
+0962,Contact representative
+0963,Legal instruments examining
+0967,Passport and visa examining
+0986,Legal assistance
+0991,Workers' compensation claims examining
+0996,Veterans claims examining
+0998,Claims assistance and examining
+1001,General arts and information
+1015,Museum curator
+1016,Museum specialist and technician
+1035,Public affairs
+1040,Language specialist
+1071,Audiovisual production
+1082,Writing and editing
+1083,Technical writing and editing
+1084,Visual information
+1101,General business and industry
+1102,Contracting
+1104,Property disposal
+1105,Purchasing
+1106,Procurement clerical and technician
+1109,Grants management
+1140,Trade specialist
+1146,Agriculture marketing
+1150,Industrial specialist
+1152,Production control
+1160,Financial analysis
+1165,Loan specialist
+1169,Internal revenue officer
+1170,Realty
+1171,Appraising
+1173,Housing management
+1176,Building management
+1224,Patent examining
+1301,General physical science
+1306,Health physics
+1310,Physics
+1311,Physical science technician
+1315,Hydrology
+1316,Hydrologic technician
+1320,Chemistry
+1340,Meteorology
+1350,Geology
+1370,Cartography
+1410,Librarian
+1412,Technical information services
+1420,Archivist
+1421,Archives technician
+1515,Operations research
+1520,Mathematics
+1529,Mathematical statistics
+1530,Statistics
+1531,Statistical assistant
+1550,Computer science
+1560,Data science
+1601,"Equipment, facilities and services"
+1603,"Equipment, facilities and services assistance"
+1640,Facility operations services
+1670,Equipment specialist
+1701,General education and training
+1702,Education and training technician
+1710,Education and vocational training
+1712,Training instruction
+1715,Vocational rehabilitation
+1720,Education program
+1740,Education services
+1750,Instructional systems
+1801,"General inspection, investigation and compliance"
+1802,"Compliance, inspection and support"
+1805,Investigative analysis
+1810,General investigating
+1811,Criminal investigating
+1822,Mine safety and health
+1825,Aviation safety
+1849,Wage and hour investigating
+1860,Equal opportunity investigation
+1862,Consumer safety inspection
+1863,Food inspection
+1881,Customs and border protection interdiction
+1889,Import specialist
+1895,Customs and border protection
+1896,Border patrol enforcement
+1910,Quality assurance
+1980,Agricultural commodity grading
+1981,Agricultural commodity aid
+2001,General supply
+2003,Supply program management
+2005,Supply clerical and technician
+2010,Inventory management
+2030,Distribution facilities and storage management
+2091,Sales store clerical
+2101,Transportation specialist
+2102,Transportation clerk and assistant
+2130,Traffic management
+2150,Transportation operations
+2151,Dispatching
+2152,Air traffic control
+2181,Aircraft operation
+2210,Information technology management
+2602,Electronic measurement equipment mechanic
+2604,Electronics mechanic
+2606,Electronic industrial controls mechanic
+2610,Electronic integrated systems mechanic
+2805,Electrician
+2810,High voltage electrician
+2854,Electrical equipment repairing
+2892,Aircraft electrician
+3105,Fabric working
+3414,Machining
+3502,Laboring
+3566,Custodial working
+3610,Insulating
+3703,Welding
+3705,Nondestructive testing
+3806,Sheet metal mechanic
+3820,Shipfitting 
+4102,Painting
+4204,Pipefitting
+4206,Plumbing 
+4352,Plastic fabricating
+4607,Carpentry
+4701,General maintenance and operations work 
+4742,Utility systems repairing/operating
+4749,Maintenance mechanic
+4754,Cemetery caretaking
+5210,Rigging 
+5220,Shipwright 
+5301,General industrial equipment maintenance
+5306,Air conditioning equipment mechanic
+5334,Marine machinery mechanic
+5350,Production machinery mechanic
+5352,Industrial equipment mechanic
+5378,Powered support systems mechanic 
+5402,Boiler plant operating 
+5407,Electric power controlling 
+5413,Fuel distribution system operating
+5426,Lock and dam operating
+5701,General transportation/mobile equipment operation
+5703,Motor vehicle operating
+5705,Tractor operating
+5716,Engineering equipment operating
+5725,Crane operating
+5801,General transportation/mobile equipment maintenance
+5803,Heavy mobile equipment mechanic
+5823,Automotive mechanic
+6501,"General ammunition, explosives and toxic materials work"
+6502,Explosives operating
+6610,Small arms repairing 
+6641,Ordnance equipment mechanic
+6652,Aircraft ordnance system mechanic
+6901,General warehousing and stock handling
+6904,Tools and parts attending 
+6907,Materials handling
+6910,Materials expediting 
+6912,Materials examining and identifying
+6914,Store working 
+7304,Laundry working 
+7404,Cooking
+7407,Meatcutting
+7408,Food service working
+8255,Pneudraulic systems mechanic 
+8268,Aircraft pneudraulic systems mechanic
+8602,Aircraft engine mechanic
+8801,General aircraft overhaul
+8852,Aircraft mechanic 

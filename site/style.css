@@ -1,0 +1,77 @@
+:root{--bg:#fff;--fg:#1b1b1b;--mut:#5a5a5a;--line:#d9d9d9;--accent:#1a4480;
+--accent-soft:#eef3fa;--good:#0b6b3a;--goodbg:#e7f4ec;--warn:#8a5300;--warnbg:#fdf3e2;
+--bad:#8b1a1a;--badbg:#fbeaea;--card:#fff;--shadow:0 1px 2px rgba(27,27,27,.05);}
+@media (prefers-color-scheme:dark){:root{--bg:#14161a;--fg:#eceef1;--mut:#a4abb5;--line:#31363e;
+--accent:#8fb4e8;--accent-soft:#1d2634;--good:#7ddba4;--goodbg:#14301f;--warn:#f0c479;--warnbg:#33270f;
+--bad:#f0a0a0;--badbg:#331616;--card:#191c21;--shadow:none;}}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+font:16px/1.6 "Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:760px;margin:0 auto;padding:48px 20px 96px}
+h1{font-size:2rem;line-height:1.2;letter-spacing:-.02em;margin:.2em 0 .5em}
+h2{font-size:1.15rem;line-height:1.35;margin:.4em 0}
+a{color:var(--accent);text-underline-offset:2px}
+.muted{color:var(--mut);font-size:.9rem}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+button{font:inherit;font-weight:600;cursor:pointer;border:1px solid var(--line);
+background:var(--card);color:var(--fg);border-radius:8px;padding:10px 16px;
+transition:border-color .12s,background .12s}
+button:hover{border-color:var(--accent)}
+#start{background:var(--accent);border-color:var(--accent);color:var(--bg);
+padding:12px 28px;font-size:1.05rem}
+#start:hover{filter:brightness(1.12)}
+
+/* intro */
+.steps{list-style:none;counter-reset:step;padding:0;margin:26px 0 30px;display:grid;gap:16px}
+.steps li{counter-increment:step;padding-left:42px;position:relative}
+.steps li::before{content:counter(step);position:absolute;left:0;top:-1px;
+width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);
+font-weight:700;font-size:.9rem;display:grid;place-items:center}
+.footnote{font-size:.82rem;color:var(--mut);border-top:1px solid var(--line);
+padding-top:14px;margin-top:40px;max-width:60ch;line-height:1.55}
+
+/* quiz */
+.bar{height:4px;background:var(--line);border-radius:2px;overflow:hidden;margin:0 0 10px}
+.bar>i{display:block;height:100%;background:var(--accent);transition:width .25s}
+#qtext{font-size:1.25rem;line-height:1.45;font-weight:600;margin:6px 0 4px;min-height:3.6em}
+.opts{display:grid;gap:10px;margin:18px 0}
+.opts button{text-align:left;font-weight:400;padding:13px 16px}
+.opts button:hover{background:var(--accent-soft)}
+.opts button.sel{border-color:var(--accent);background:var(--accent-soft);font-weight:600}
+.nav{display:flex;gap:8px;margin-top:20px}
+.nav button{font-weight:400;color:var(--mut)}
+.nav button:disabled{opacity:.4;cursor:default}
+
+/* results */
+.controls{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:flex-start;margin:20px 0;
+padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow)}
+label{display:flex;gap:6px;align-items:center}
+input[type=checkbox]{accent-color:var(--accent);width:17px;height:17px;margin-top:2px}
+.check{align-items:flex-start;gap:10px}
+.check em{display:block;font-style:normal;font-size:.85rem;color:var(--mut);margin-top:2px}
+#retake{margin-left:auto;font-weight:400}
+
+.card{border:1px solid var(--line);border-radius:12px;padding:22px 24px;margin:18px 0;
+background:var(--card);box-shadow:var(--shadow)}
+.card h2{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-top:0}
+.card>p.muted{margin:6px 0 12px;line-height:1.55}
+.rank{color:var(--mut);font-weight:400;font-size:.9rem;white-space:nowrap}
+.flag{display:inline-block;border-radius:999px;padding:3px 11px;font-size:.8rem;
+font-weight:600;margin:3px 6px 3px 0}
+.f-bad{background:var(--badbg);color:var(--bad)}
+.f-warn{background:var(--warnbg);color:var(--warn)}
+.f-good{background:var(--goodbg);color:var(--good)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:16px 0 4px}
+.fact{border-left:3px solid var(--accent-soft);padding-left:12px}
+.fact b{display:block;font-size:1.5rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+details{margin-top:14px}
+summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:.92rem}
+summary:hover{text-decoration:underline;text-underline-offset:2px}
+.joblist{max-height:320px;overflow-y:auto;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem;margin-top:10px;
+font-variant-numeric:tabular-nums}
+td,th{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+th{font-weight:600;color:var(--mut)}
+.qlabel{color:var(--mut);font-size:.9rem;margin:18px 0 2px}

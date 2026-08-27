@@ -1,0 +1,93 @@
+# Question generation — config for pipeline/s5_questions.py
+#
+# The goal is NOT to replicate OPM's interest inventory. It is to produce items
+# that actually separate the occupations the federal government is hiring for at
+# entry level. Success is measured, not asserted: see `scoring` below.
+
+model:
+  # Small model by default; this is a lot of short, highly-structured calls.
+  generate: "gpt-5.4-mini"      # writing candidate questions — the harder task
+  rate: "gpt-5.4-nano"          # scoring one occupation against the candidates
+  temperature: 0.0
+  timeout_seconds: 90
+  max_retries: 3
+  max_concurrent: 6
+
+# Where the OpenAI key lives. Not copied into this repo.
+env_file: "~/Documents/repos/comments/generic-comment-analyzer/.env"
+
+# ---------------------------------------------------------------------------
+# Which occupations the instrument has to be able to tell apart.
+# No point optimising separation across 302 when 76 of them have nothing open.
+# ---------------------------------------------------------------------------
+targets:
+  min_entry_hires: 250          # permanent entry-grade new hires, 2021-25
+  require_open_or_recent: true  # status must not be never_reachable/dormant
+  max_series: 200
+
+generation:
+  n_candidates: 40              # generated per sample, before pruning
+  n_final: 24                   # kept after the measured prune
+  batch_size: 25                # occupations shown per generation call
+
+  # Measured: rating is stable run to run (94.9% of cells identical, objective
+  # moves 0.013), generation is not (objective moves 0.084). So the fix for
+  # nondeterminism is not to suppress it — it is to draw several instruments and
+  # keep the one that measures best. Caching then locks in the winner rather
+  # than locking in whatever we happened to draw first.
+  n_samples: 3
+
+  # After selecting the best sample, look at which occupation pairs the
+  # instrument still cannot tell apart and generate items aimed at exactly those.
+  # Cheaper and more targeted than showing the model more occupations at once.
+  residual_rounds: 2
+  residual_items_per_round: 6
+
+  # The axes that actually separate federal jobs, from the measured failure of
+  # the OPM instrument: its big hirers sit at +0.19 mean similarity, and
+  # near-twins like criminal investigating vs CBP interdiction (0.99) are a
+  # coin flip even though one hires 4,789 people and the other hires none.
+  axes:
+    - "Who you deal with all day: patients, inmates, taxpayers, travellers, soldiers, applicants, scientists, no one"
+    - "Where the work physically happens: hospital ward, forest, border, warehouse, courtroom, cubicle, aircraft hangar"
+    - "What passing through the door requires: a specific degree, a licence, a clearance, a fitness test, an age limit, nothing"
+    - "Rhythm and stakes: same task repeated to a standard, one long case at a time, emergencies, seasonal surges"
+    - "What a wrong call costs: money, a legal outcome, someone's health, someone's safety, nothing much"
+
+  # Phrasing has to match the answer scale. The respondent rates how interested
+  # they are in DOING the activity, so each item is a description of the work,
+  # not a "would you rather" binary.
+  style: >
+    Write each item as a plain description of the activity, in the imperative, the
+    way a job description would put it — e.g. "Explain rules, benefits and next
+    steps to people worried about their own case, with every conversation different."
+    Two sentences at most. Never begin with "Would you rather", "Do you like",
+    "Are you interested in", or any question form. No question marks.
+
+  avoid: >
+    Do not write generic interest items ("working with data"). Do not write two
+    items that would score the same across these occupations. Do not ask about
+    skills or qualifications the person already has — describe the work itself, so
+    a 17-year-old can react to it. Every item must be one a real federal job would
+    answer differently from most others on the list.
+
+rating:
+  scale_max: 4                  # 0 = not at all, 4 = central to the job
+  prompt: >
+    You are rating one federal occupation against a list of statements about work.
+    Use the real posting titles and qualification facts supplied, not your general
+    impression of the job title. Score how central each statement is to the everyday
+    work of someone hired into this occupation at entry level.
+
+# ---------------------------------------------------------------------------
+# The measured objective. One scoring function for every instrument, so a
+# generated instrument and OPM's are scored the same way.
+# ---------------------------------------------------------------------------
+scoring:
+  redundancy_max: 0.80          # drop one of any question pair above this |r|
+  min_hiring_weighted_var: 0.35 # drop items that do not discriminate where hiring is
+  # Calibrated against posting language, not guessed. Four enforcement/compliance
+  # occupations sat at 0.85-0.91 instrument similarity while sharing only
+  # 0.02-0.09 of their posting text — genuinely different jobs the instrument was
+  # collapsing. A 0.93 threshold reported zero problems and missed all four.
+  report_twin_threshold: 0.80

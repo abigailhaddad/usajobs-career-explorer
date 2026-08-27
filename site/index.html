@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Career Explorer, with the fine print</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1787863882">
+</head>
+<body>
+<main>
+  <section id="intro">
+    <h1>Find your fit with the Career Explorer</h1>
+    <ul class="steps">
+      <li>You take a <span id="qcount">25</span>-question quiz that lasts 10&ndash;15 minutes</li>
+      <li>We'll match you with careers in the federal government based on your interests</li>
+      <li>You see how much each job hires, what's open now, and what you need to qualify</li>
+    </ul>
+    <button id="start">Start the quiz</button>
+    <p class="footnote">Not affiliated with USAJOBS or the U.S. Office of Personnel Management.
+    This is an independent rebuild of the government's Career Explorer, using its published
+    hiring records and job postings. The official tool is at
+    <a href="https://www.usajobs.gov/careerexplorer/" target="_blank" rel="noopener">usajobs.gov/careerexplorer</a>.</p>
+  </section>
+
+  <section id="quiz" hidden>
+    <div class="bar"><i id="progress"></i></div>
+    <p class="muted" id="counter"></p>
+    <p class="qlabel">How interested are you in doing this at work?</p>
+    <p id="qtext"></p>
+    <div class="opts" id="opts"></div>
+    <div class="nav"><button id="back">Back</button></div>
+  </section>
+
+  <section id="results" hidden>
+    <h1>Your results</h1>
+    <p class="muted">Ranked by how well the work matches what you said you wanted.</p>
+    <p class="muted" id="trendline"></p>
+    <div class="controls">
+      <label class="check"><input type="checkbox" id="onlyOpen">
+        <span>Only show occupations with a job open right now
+          <em>Jobs anyone can apply to — not the ones limited to current federal employees</em>
+        </span></label>
+      <label class="check"><input type="checkbox" id="onlyReal">
+        <span>Hide occupations that barely hire
+          <em>Fewer than about 50 permanent entry-level hires a year, across the whole government</em>
+        </span></label>
+      <button id="retake">Retake</button>
+    </div>
+    <p class="muted" id="filtered"></p>
+    <div id="cards"></div>
+  </section>
+</main>
+<script src="app.js?v=1787863827"></script>
+</body>
+</html>

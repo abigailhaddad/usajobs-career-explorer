@@ -1,0 +1,34 @@
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/
+
+# pipeline scratch
+data/.llm_cache/
+data/.duckdb_tmp/
+
+# local investigations, not part of the tool
+analysis/
+
+# dev artifacts
+.playwright-mcp/
+*.png
+.vercel
+.wrangler/
+
+# previous-run snapshots, regenerated locally for the CHANGES.md diff
+data/.prev/
+careerexplorer_series_profiles.json
+usajobs_career_explorer_questions.json
+
+# outputs of local investigations, not the tool
+data/headtohead.csv
+data/item_subset.csv
+data/lever_sweep.csv
+data/rating_prompt_sweep.csv
+data/knockout_postings.parquet
+data/llm_labels_10.npy
+data/llm_labels_14.npy
+data/llm_labels_18.npy
+data/llm_labels_profile_12.npy

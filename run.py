@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Run the pipeline end to end and report what changed.
+
+    python run.py              # stages 1-4, then diff against the previous run
+    python run.py --stages 2,4 # re-run only some stages (others keep prior output)
+    python run.py --diff-only  # no fetching; just re-diff what is on disk
+    python run.py --stages 5   # question generation (LLM; costs money, cached)
+
+Outputs land in data/. data/CHANGES.md is the human-readable diff.
+"""
+import argparse
+import sys
+import traceback
+
+from pipeline import (s1_quiz, s2_openings, s3_hiring, s4_build, s5_questions,
+                      s6_retention, s7_standards)
+from pipeline.common import diff_table, snapshot, write_changelog
+
+# Stage 5 is not in the default set: it makes LLM calls. Responses are cached on
+# disk, so re-running it after the first time is free and deterministic.
+STAGES = {1: ("quiz", s1_quiz.run), 2: ("openings", s2_openings.run),
+          3: ("hires", s3_hiring.run), 4: ("build", s4_build.run),
+          5: ("questions", s5_questions.run), 6: ("retention", s6_retention.run),
+          7: ("standards", s7_standards.run)}
+DEFAULT_STAGES = "1,2,3,6,7,4"   # 6 and 7 before 4: the fact table folds both in
+
+# (table, key, columns whose movement is worth calling out)
+WATCH = [
+    ("questions", "question_id", ["question_text"]),
+    ("series_profiles", "series", ["series_name", "profile"]),
+    ("openings", "series", ["ann_reachable", "openings_reachable",
+                            "reachable_open_now", "status",
+                            "pct_degree_required", "pct_education_substitutable"]),
+    ("hires", "series", ["hires_entry_perm", "hires_new"]),
+    ("series_facts", "series", ["flag_count", "status", "hires_entry_perm",
+                                "reachable_open_now", "pct_degree_required"]),
+    ("retention", "series", ["early_quits", "early_quit_share_of_exits"]),
+    ("opm_standards", "series", ["opm_degree_required"]),
+    ("hires_by_state", ("series", "state"), ["entry_hires"]),
+    ("hires_by_month", ("series", "month"), ["entry_hires", "new_hires"]),
+    ("retention_by_year", ("series", "year"), ["early_quits"]),
+    ("generated_questions", "question_id", ["text", "axis", "hiring_weighted_var"]),
+    ("generated_profiles", "series", ["series_name"]),
+]
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--stages", default=DEFAULT_STAGES,
+                    help="comma-separated stage numbers; 5 = LLM question generation")
+    ap.add_argument("--diff-only", action="store_true")
+    a = ap.parse_args()
+
+    meta = {}
+    failed = []
+    if not a.diff_only:
+        n = snapshot()
+        meta["snapshotted"] = f"{n} previous tables"
+        want = [int(s) for s in a.stages.split(",") if s.strip()]
+        for i in want:   # order matters: 6 and 7 feed 4
+            name, fn = STAGES[i]
+            try:
+                fn()
+                meta[f"stage {i} ({name})"] = "ok"
+            except Exception as e:
+                meta[f"stage {i} ({name})"] = f"FAILED — {type(e).__name__}: {e}"
+                failed.append(f"{i} ({name})")
+                traceback.print_exc()
+                print(f"  !! stage {i} failed; keeping previous data/{name} output")
+
+    sections = []
+    if failed:
+        # A failed stage keeps its previous output, so downstream tables still
+        # build and the diff still reads "no changes". That is exactly how a
+        # silent failure hides. Say so at the top, and exit non-zero.
+        sections.append(f"> **STAGES FAILED: {', '.join(failed)}** — "
+                        f"their tables below are STALE, not unchanged.\n")
+    for table, key, cols in WATCH:
+        sections += diff_table(table, key, cols)
+    write_changelog(sections, meta)
+    if failed:
+        print(f"\n!! {len(failed)} stage(s) failed: {', '.join(failed)}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
