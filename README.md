@@ -25,9 +25,9 @@ Stage 5 rewrites the questions and is opt-in because it calls an LLM:
 uncached run is about $0.35.
 
 Two things live outside the repo. Stage 7 reads OPM's qualification standards
-from `~/Documents/repos/opm-educ-req/cache` (`STANDARDS_CACHE` in
-`pipeline/config.py`), and stage 5 reads an OpenAI key from `env_file` in
-`pipeline/questions_config.yaml`.
+from a checkout of [opm-educ-req](https://github.com/abigailhaddad/opm-educ-req),
+expected beside this repo — set `OPM_STANDARDS_CACHE` if it's elsewhere. Stage 5
+needs `OPENAI_API_KEY`, from the environment or from a `.env` file.
 
 ## The pipeline
 

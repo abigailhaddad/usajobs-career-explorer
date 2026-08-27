@@ -1,4 +1,5 @@
 """Shared constants and paths."""
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,9 +31,12 @@ HF_BASE = "https://huggingface.co/datasets/impactproject/opm-ehri-data/resolve/m
 HIRE_MONTHS = ("202101", None)
 
 # OPM's published GS Qualification Standards, one HTML page per series, already
-# scraped in the opm-educ-req repo. Authoritative for whether a series carries an
-# Individual Occupational Requirement, which postings usually do not restate.
-STANDARDS_CACHE = Path("~/Documents/repos/opm-educ-req/cache")
+# scraped by github.com/abigailhaddad/opm-educ-req. Authoritative for whether a
+# series carries an Individual Occupational Requirement, which postings usually
+# do not restate. Defaults to that repo checked out beside this one; override
+# with OPM_STANDARDS_CACHE.
+STANDARDS_CACHE = Path(os.environ.get(
+    "OPM_STANDARDS_CACHE", ROOT.parent / "opm-educ-req" / "cache")).expanduser()
 
 # --- definitions used across stages ---------------------------------------
 # Hiring paths that do not require already being a federal employee. USAJOBS emits both a slug and a

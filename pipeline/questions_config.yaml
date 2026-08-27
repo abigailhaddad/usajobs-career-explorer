@@ -13,8 +13,9 @@ model:
   max_retries: 3
   max_concurrent: 6
 
-# Where the OpenAI key lives. Not copied into this repo.
-env_file: "~/Documents/repos/comments/generic-comment-analyzer/.env"
+# Where the OpenAI key lives. Read, never copied into this repo. Skipped if
+# OPENAI_API_KEY is already set in the environment.
+env_file: ".env"
 
 # ---------------------------------------------------------------------------
 # Which occupations the instrument has to be able to tell apart.

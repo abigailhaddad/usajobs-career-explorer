@@ -30,19 +30,24 @@ def _key(model, system, prompt, schema) -> str:
     return hashlib.sha256(blob.encode()).hexdigest()[:32]
 
 
-def load_env(env_file: str):
-    """Read KEY=value from an .env we do not own. Never copies it into this repo."""
+def load_env(env_file: str = ".env"):
+    """Read KEY=value from an .env we do not own. Never copies it into this repo.
+
+    A missing file is fine when OPENAI_API_KEY is already set in the environment,
+    so the key can come from either place.
+    """
     p = Path(env_file).expanduser()
-    if not p.exists():
-        raise FileNotFoundError(f"env file not found: {p}")
-    for line in p.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, v = line.split("=", 1)
-        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    if p.exists():
+        for line in p.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
     if not os.environ.get("OPENAI_API_KEY"):
-        raise RuntimeError(f"OPENAI_API_KEY not present in {p}")
+        raise RuntimeError(
+            f"OPENAI_API_KEY is not set and was not found in {p}. Export it, or "
+            f"point env_file in pipeline/questions_config.yaml at a file holding it.")
 
 
 def call(prompt: str, system: str, output_model: Type[T], model: str,

@@ -15,6 +15,7 @@ analysis/
 .playwright-mcp/
 *.png
 *.jpg
+.env
 .vercel
 .wrangler/
 
