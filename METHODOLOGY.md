@@ -1,11 +1,9 @@
 # Methodology
 
-Every prompt, dataset sample and formula below is copied from a real run. The
-worked example follows one occupation, **practical nurse (series 0620)**, from
-raw source to what ships in the browser.
+Every prompt, sample and formula below is copied from a real run. One
+occupation, **practical nurse (series 0620)**, runs through all of it.
 
-Regenerate anything here with `python run.py` (stages 1, 2, 3, 7, 4) and
-`python run.py --stages 5` (the questions).
+Regenerate with `python run.py`, and `python run.py --stages 5` for the questions.
 
 ---
 
@@ -35,7 +33,7 @@ Regenerate anything here with `python run.py` (stages 1, 2, 3, 7, 4) and
 
 `data/series_profiles.parquet` (302 rows × 5 cols) — `series, series_name, ce_description, related_titles, profile`
 
-The official profile for 0620, first six of 32 floats:
+The official profile for 0620, first six of 32:
 
 ```
 [0.103429791, -0.132386898, -0.000247793, 3.028433097, 0.16298403, -1.277121255, ...]
@@ -45,7 +43,7 @@ The official profile for 0620, first six of 32 floats:
 
 ## s2 — postings
 
-Definitions, from `pipeline/config.py`:
+`pipeline/config.py`:
 
 ```python
 PUBLIC_PATHS = ("public", "The public", "student", "Students",
@@ -55,7 +53,7 @@ TRADE_PLANS  = ("WG", "WL")
 ENTRY_MAX_GRADE = 9
 ```
 
-The reachability test, from `pipeline/s2_openings.py`:
+`pipeline/s2_openings.py`:
 
 ```python
 public_path = (f"EXISTS (SELECT 1 FROM json_each(HiringPaths) h "
@@ -82,14 +80,14 @@ series  ann_total  ann_public  ann_reachable  openings_reachable  reachable_open
   0017         58          14              0                   0                   0 recently_active                  NaN
 ```
 
-Series 0007 is why openings are counted rather than announcements: 83 reachable
-announcements carry 4,597 openings.
+Series 0007: 83 reachable announcements, 4,597 openings. That is why the site
+counts openings, not announcements.
 
 ---
 
 ## s3 — hires
 
-From `pipeline/s3_hiring.py`:
+`pipeline/s3_hiring.py`:
 
 ```python
 PERM  = "(tenure LIKE 'TENURE GROUP 1%' OR tenure LIKE 'TENURE GROUP 2%')"
@@ -148,13 +146,13 @@ typical_entry_grade      3.0
 tenure_kind              usually permanent
 ```
 
-`pct_degree_required` is 0.4 and `opm_degree_required` is False, yet the answer
-is `credential`. Four sources are combined, because postings restate
-requirements inconsistently and about 6% of the education field is miscoded. Of
-practical nurses, 9% hold a bachelor's and 87% hold some college, and the job
-needs an LPN diploma.
+0.4% of postings state a degree requirement and OPM's standard requires none,
+but `degree_requirement` is `credential`: 9% of practical nurses hold a
+bachelor's, 87% hold some college, and the job needs an LPN diploma. Four
+sources are combined because no single one is reliable — postings restate
+requirements inconsistently, and about 6% of the education field is miscoded.
 
-The same occupation as it ships in `site/data.json`:
+Shipped in `site/data.json`:
 
 ```json
 {
@@ -173,10 +171,10 @@ The same occupation as it ships in `site/data.json`:
 
 ## s5 — writing the questions
 
-Config: `pipeline/questions_config.yaml`. Generating model `gpt-5.4-mini`,
-rating model `gpt-5.4-nano`, `temperature: 0.0`, `scale_max: 4`.
+`pipeline/questions_config.yaml`: generate with `gpt-5.4-mini`, rate with
+`gpt-5.4-nano`, `temperature: 0.0`, `scale_max: 4`.
 
-Targets: series with ≥250 permanent entry-grade hires since 2021, excluding
+Targets are series with ≥250 permanent entry-grade hires since 2021, excluding
 `never_reachable` and `dormant`, capped at 200. The last run used 175.
 
 ### Generation — system prompt
@@ -209,8 +207,8 @@ a 17-year-old can react to it. Every item must be one a real federal job would
 answer differently from most others on the list.
 ```
 
-The user message lists 25 real occupations, each rendered by `_occ_blurb` (the
-same format shown under Rating below), and ends:
+The user message lists 25 occupations in the format shown under Rating below,
+then:
 
 ```
 Write {per} items that would separate these occupations from each other.
@@ -220,7 +218,7 @@ would produce.)
 
 ### Generation — response
 
-Three of the items returned in one batch, verbatim from `data/.llm_cache`:
+Three items from one batch, verbatim from `data/.llm_cache`:
 
 ```json
 {"questions": [
@@ -247,9 +245,8 @@ work of someone hired into this occupation at entry level.
 
 ### Rating — user prompt
 
-One real call, model `gpt-5.4-nano`, cache key `26b559d9bf6b6efa488215fd21b65e10`.
-The occupation block is built by `_occ_blurb`; the statements are the 25 live
-questions. Truncated at statement 8 only for length — the real prompt lists all 25.
+One call, cache key `26b559d9bf6b6efa488215fd21b65e10`. Truncated at statement
+8 for length; the real prompt lists all 25.
 
 ```
 Occupation:
@@ -288,15 +285,14 @@ Score every statement 0-4. Return one entry per statement id.
 ]}
 ```
 
-That array, in order, is the `profile` shipped for 0620 in the s4 section above.
-Missing cells are filled with the item's column mean; more than 25% missing
-raises rather than averaging a hole.
+That array is the `profile` for 0620 above. Missing cells are filled with the
+item's column mean; over 25% missing raises.
 
 ---
 
 ## The objective
 
-`pipeline/s5_questions.py`. `P` is occupations × items.
+`pipeline/s5_questions.py`, where `P` is occupations × items.
 
 ```python
 def _score_instrument(P, hires, names, cfg):
@@ -326,7 +322,7 @@ def _objective(P, hires, names, cfg, baseline_coverage=None):
     return m["mean_similarity_top30"] + 0.02 * len(m["unresolvable_twins"])
 ```
 
-Lower is better. Coverage is a constraint rather than a weighted term:
+Lower is better. Coverage is a constraint, not a weighted term:
 
 ```python
 def _respondent_spread(P, n=3000, seed=0):
@@ -342,15 +338,14 @@ def _respondent_spread(P, n=3000, seed=0):
     return effective / len(Pz)
 ```
 
-Pruning: drop items with hiring-weighted variance < `0.35`; then drop one of any
-item pair with |r| ≥ `0.80`, keeping the higher-variance one; then restore the
-best item from any axis emptied by pruning. `n_samples: 3` independent
-generations, best kept. `residual_rounds: 2`, six items each, kept only if the
-objective improves.
+Pruning drops items with hiring-weighted variance < `0.35`, then one of any item
+pair with |r| ≥ `0.80`, keeping the higher-variance one, then restores the best
+item from any axis it emptied. `n_samples: 3` generations, best kept.
+`residual_rounds: 2` of six items each, kept only if the objective improves.
 
 ### Measured
 
-Same 175 occupations, same formula:
+Same 175 occupations, same formula.
 
 | item set | mean similarity, top 30 | distinct #1 of 5,000 | tied pairs |
 |---|---|---|---|
@@ -358,8 +353,7 @@ Same 175 occupations, same formula:
 | generated, pruned | 0.032 | — | 16 |
 | shipped, 25 items (14 narrow + 11 broad) | 0.067 | 232 | 8 |
 
-Pairs the official items cannot separate, from
-`data/generated_questions_report.json`:
+Pairs the official items cannot separate (`data/generated_questions_report.json`):
 
 ```
 0.978  Customs and border protection            | Criminal investigating
@@ -374,8 +368,7 @@ Pairs the official items cannot separate, from
 0.807  Nursing assistant                        | Practical nurse
 ```
 
-Item edits re-rate the whole catalogue and are rejected unless the numbers hold
-(`instrument/reword.py`):
+Item edits re-rate the catalogue and are rejected unless the numbers hold:
 
 ```python
 BAND = {"similarity": 0.090, "cov": 205, "ties": 11}
@@ -388,8 +381,8 @@ if not (sim <= BAND["similarity"] and cov >= BAND["cov"] and ties <= BAND["ties"
 
 ## Scoring in the browser
 
-`site/app.js`. No server, no API — `data.json` carries the questions, the 302
-profiles, and everything on a card.
+`site/app.js`. No server: `data.json` carries the questions, the 302 profiles,
+and everything on a card.
 
 ```js
 function zscore(v) {
@@ -411,14 +404,13 @@ function rank(answers) {
 }
 ```
 
-Answers are 1–5, one digit each, so a run encodes as a query string —
-`?a=5235412534251345231453241`. A link whose length does not match the current
-question count, or that carries a digit off the scale, is ignored.
+Answers are 1–5, one digit each: `?a=5235412534251345231453241`. A link of the
+wrong length, or with a digit off the scale, is ignored.
 
 ---
 
 ## What is not tested
 
-The ratings are one model's reading of each occupation, grounded in posting text
-rather than job titles. Nothing here measures whether a rating is correct — only
-whether the questions produce ratings that tell occupations apart.
+The ratings are one model's reading of each occupation, from posting text rather
+than job titles. Nothing here measures whether a rating is correct. What is
+measured is whether the questions produce ratings that tell occupations apart.
