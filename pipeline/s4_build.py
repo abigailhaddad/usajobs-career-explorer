@@ -323,7 +323,8 @@ def run():
     # The appendix is written from the same tables the payload came from, so it
     # belongs to the same step. Kept behind a guard because stage 4 also runs
     # before the instrument exists, on the first pass of a full rebuild.
-    from . import appendix
+    from . import appendix, methodology
     if (DATA / "mixed_questions.parquet").exists():
         appendix.run()
+        methodology.run()
     return df

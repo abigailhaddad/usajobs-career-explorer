@@ -1,279 +1,143 @@
 # Methodology
 
-Every prompt, sample and formula below is copied from a real run. One
-occupation, **practical nurse (series 0620)**, runs through all of it.
+Every prompt, sample and number below is read from the pipeline at build time,
+so this document describes the run that produced the current site and not an
+earlier one. One occupation, **Practical nurse (series 0620)**, runs
+through all of it.
 
-Regenerate with `python run.py`, and `python run.py --stages 5` for the questions.
-
----
-
-## Sources
-
-| stage | source | what it answers |
-|---|---|---|
-| s1 | `usajobs.gov/careerexplorer/quiz` page HTML | which occupations exist, and the official questions and profiles |
-| s2 | `usajobs_historical` R2 bucket, `current_jobs_{2025,2026}.parquet` | what is posted, who may apply, what it asks for |
-| s3 | HuggingFace `impactproject/opm-ehri-data` accessions | who actually got hired |
-| s7 | OPM GS Qualification Standards, scraped in [opm-educ-req](https://github.com/abigailhaddad/opm-educ-req) | whether a degree is legally required |
-| s4 | the four above | one row per occupation → `site/data.json` |
-| s5 | LLM, opt-in | the 25 questions and every occupation's ratings |
+Rebuild everything with `python run.py --full`.
 
 ---
 
-## s1 — the official quiz
-
-`data/questions.parquet` (32 rows × 3 cols) — `question_id, sort_order, question_text`
+## The pipeline
 
 ```
- question_id  sort_order  question_text
-           1           1  Operate machines to cut, shape and fit metal, glass or concrete parts. Use tools to create finished products or structures.
-           2           2  Fix electronics, machines and work equipment using hand and power tools. Replace parts, make repairs and perform tests to check the results.
-           3           3  Study plant and animal growth in settings such as farms, forests, zoos or shelters. Tend to crops or animals and learn what affects their growth or survival.
+python run.py --full     # stages 1,2,3,7,4,5,4
+
+  s1 quiz        the official catalogue: 302 occupations and its own questions
+  s2 openings    what is posted, who may apply, and what the work is
+  s3 hires       who actually got hired, from OPM personnel records
+  s7 standards   whether a degree is legally required
+  s4 build       one row per occupation -> site/data.json
+  s5 instrument  families -> narrow items -> broad items -> combine -> audit
+  s4 build       again, now that the questions exist
 ```
 
-`data/series_profiles.parquet` (302 rows × 5 cols) — `series, series_name, ce_description, related_titles, profile`
-
-`profile` is 32 numbers, one per question, in `question_id` order. Higher means
-the occupation is more associated with that kind of work. The official numbers
-sit on no fixed scale: for practical nurse they run from −1.95 to +3.03. The
-ratings this project generates are 0–4 instead.
-
-Practical nurse (series 0620), its two highest and two lowest of 32:
-
-| value | q | question |
-|---|---|---|
-| +3.03 | 4 | Provide health care and treatment to patients with various conditions and needs. Perform medical procedures and track patient progress. |
-| +1.19 | 16 | Monitor the quality and safety of food and agriculture products and supplies. Make sure food products are made and processed properly. |
-| −1.28 | 6 | Create, configure and test computer software and hardware. Write programs, conduct analyses and meet design standards. |
-| −1.95 | 23 | Design methods to efficiently and securely store and transport critical supplies and resources. Make sure policies are followed to protect the public and prevent waste. |
-
-As stored, first six of the 32:
-
-```
-[0.103429791, -0.132386898, -0.000247793, 3.028433097, 0.16298403, -1.277121255, ...]
-```
-
----
-
-## s2 — postings
-
-`pipeline/config.py`:
+Stage 4 appears twice because the dependency runs both ways: stage 5 rates
+occupations from `series_facts`, which stage 4 builds, and stage 4 writes the
+payload from the questions, which stage 5 builds. Running stage 5 against a
+stale `series_facts` once rated 86 of 302 occupations against job titles the
+site no longer showed, and every stage still reported success, so stage 5 checks
+before it starts:
 
 ```python
-PUBLIC_PATHS = ("public", "The public", "student", "Students",
-                "graduates", "Recent graduates")
-GS_LIKE      = ("GS", "GG", "GL", "GW", "FG", "IM", "ND", "DB")
-TRADE_PLANS  = ("WG", "WL")
-ENTRY_MAX_GRADE = 9
+def _check_order():
+    """series_facts is what every occupation blurb is built from.
+
+    Stage 2 rewrites the posting text and the common titles that go into those
+    blurbs, but stage 4 is what folds them into series_facts. Running stage 5
+    against a stale series_facts produces ratings keyed to titles the site no
+    longer shows: it cost 86 of 302 occupations once, and the mismatch is
+    invisible in the output because every stage still reports success.
+    """
+    facts = DATA / "series_facts.parquet"
+    if not facts.exists():
+        raise SystemExit("data/series_facts.parquet is missing — run stage 4 first")
+    stale = [p.name for p in (DATA / "openings.parquet", DATA / "hires.parquet")
+             if p.exists() and p.stat().st_mtime > facts.stat().st_mtime]
+    if stale:
+        raise SystemExit(
+            f"series_facts.parquet is older than {', '.join(stale)}.\n"
+            f"Run `python run.py --stages 4` first: stage 5 rates occupations from "
+            f"series_facts, so a stale one silently rates the wrong text.")
 ```
 
-`pipeline/s2_openings.py`:
+---
+
+## What the model is shown
+
+Both the generation and rating prompts describe an occupation through
+`_occ_blurb`, and nothing else about it reaches the model. The posting text
+comes from stage 2:
 
 ```python
-public_path = (f"EXISTS (SELECT 1 FROM json_each(HiringPaths) h "
-               f"WHERE json_extract_string(h.value,'$.hiringPath') IN ({_lst(PUBLIC_PATHS)}))")
-
-# A grade number only means "junior" on GS-style plans. Banded plans number
-# the other way: an IP-01 Deputy Director pays $151k, and 575 Senior
-# Executive Service postings were being counted as entry level because ES
-# grades read 01.
-entry_grade = (f"((payScale IN ({gs_like}) AND {grade} IS NOT NULL "
-               f"AND {grade} BETWEEN 1 AND {ENTRY_MAX_GRADE})"
-               f" OR payScale IN ({trades}))")
-
-reach = f"({public_path}) AND appointmentType='Permanent' AND {entry_grade}"
-openings = "COALESCE(TRY_CAST(totalOpenings AS INT),1)"
+# MajorDuties, not JobSummary. JobSummary is where agencies put recruitment
+# boilerplate: every VA practical nurse posting led with the student loan
+# repayment programme and said nothing about nursing, so the model was
+# rating the occupation on a benefits blurb.
+# MajorDuties is an array of strings. The [*] form unescapes each element;
+# casting the whole array to VARCHAR[] instead leaves JSON quotes embedded
+# in the text, which is what the model then read.
+duties_expr = (f"array_to_string(json_extract_string({D}, "
+               f"'$.UserArea.Details.MajorDuties[*]'), ' ')")
+# One candidate per hiring agency before ranking. Without this the pool is
+# whoever writes longest: 0620 has DoD, Bureau of Prisons and DOJ postings,
+# but VA runs 954 of its 1,186 announcements and filled every slot.
+cands = con.execute(f"""
+SELECT series, title, agency, duties FROM (
+  SELECT *, row_number() OVER (PARTITION BY series ORDER BY n DESC) AS rk
+  FROM (
+    SELECT *, row_number() OVER (PARTITION BY series, agency ORDER BY n DESC) AS rk_agency
+    FROM (
+      SELECT {series} AS series, positionTitle AS title,
+             hiringAgencyName AS agency,
+             substr({duties_expr}, 1, 900) AS duties,
+             length({duties_expr}) AS n
+      FROM read_parquet([{urls}]), json_each(JobCategories) AS s
+      WHERE {reach} AND length({duties_expr}) >= 200
+    )
+  ) WHERE rk_agency = 1
+) WHERE rk <= {TEXT_CANDIDATES}""").df()
 ```
 
-`data/openings.parquet` (605 rows × 29 cols):
+`MajorDuties` matters. The field used before was `JobSummary`, which is where
+agencies put recruitment copy: every Practical nurse posting led with the
+student loan repayment programme and said nothing about nursing, so the model
+was rating the occupation on a benefits blurb.
 
-```
-series  ann_total  ann_public  ann_reachable  openings_reachable  reachable_open_now          status  pct_degree_required
-  0006        551          29              2                   2                   1        open_now                  0.0
-  0007        886         162             83                4597                  11        open_now                  0.0
-  0017         58          14              0                   0                   0 recently_active                  NaN
-```
-
-`ann_reachable` counts announcements; `openings_reachable` sums their
-`totalOpenings`. The site shows announcements. `totalOpenings` is unreliable —
-exactly 1 per announcement for 40% of series, and 55 per announcement for series
-0007 — so the sums stay in the parquet and are not displayed.
-
----
-
-## s3 — hires
-
-`pipeline/s3_hiring.py`:
+Which postings get kept is decided by how much they differ from each other:
 
 ```python
-PERM  = "(tenure LIKE 'TENURE GROUP 1%' OR tenure LIKE 'TENURE GROUP 2%')"
-ENTRY = (f"((pay_plan_code IN ({_sql_list(GS_LIKE)}) AND TRY_CAST(grade AS INT) "
-         f"BETWEEN 1 AND {ENTRY_MAX_GRADE}) OR pay_plan_code IN ({_sql_list(TRADE_PLANS)}))")
+def pick_varied(g, keep=TEXT_KEEP):
+    """Keep the longest posting, then the ones least like what is already kept.
+
+    Ranking by length alone returned three copies of the same VA announcement.
+    Deduping by hiring agency is not enough either: two agencies often run the
+    same boilerplate. So compare the text itself and take the spread.
+    """
+    rows = g.to_dict("records")
+    if len(rows) <= keep:
+        return rows
+    bags = [_words(r["duties"]) for r in rows]
+    chosen = [0]                                   # rows arrive longest-first
+    while len(chosen) < keep:
+        nxt = min((i for i in range(len(rows)) if i not in chosen),
+                  key=lambda i: (max(_overlap(bags[i], bags[j]) for j in chosen), i))
+        chosen.append(nxt)
+    return [rows[i] for i in chosen]
 ```
 
-```sql
-sum(n) FILTER ({NEW})                                    AS hires_new,
-sum(n) FILTER ({NEW} AND {PERM})                         AS hires_new_perm,
-sum(n) FILTER ({NEW} AND {PERM} AND {ENTRY})             AS hires_entry_perm,
-sum(n) FILTER ({NEW} AND {ENTRY} AND NOT {PERM})         AS hires_entry_temp,
-sum(n) FILTER ({NEW} AND {PERM} AND {ENTRY} AND {YOUNG}) AS hires_entry_perm_young,
-```
-
-`data/hires.parquet` (645 rows × 17 cols):
+For Practical nurse that returns 3 postings:
 
 ```
-series  hires_entry_perm  hires_entry_temp  hires_new
-     *               191                80       1257
-  0006                 7                 1         56
-  0007             10773                 2      10776
-```
-
----
-
-## s7 — qualification standards
-
-`data/opm_standards.parquet` (415 rows × 4 cols):
-
-```
-series  opm_degree_required  opm_experience_alt  standard_chars
-  0006                False               False            3661
-  0007                False               False            7138
-  0011                False               False            1869
+[Veterans Health Administration] Practical Nurse
+[Defense Health Agency] Practical Nurse
+[Department of Defense] Practical Nurse (Outpatient)
 ```
 
 ---
 
-## s4 — the join
+## s5b — writing the questions
 
-`data/series_facts.parquet`, the row for practical nurse:
-
-```
-series                   0620
-series_name              Practical nurse
-hires_entry_perm         10525
-hires_per_year           1914.0
-status                   open_now
-reachable_open_now       102.0
-openings_reachable       1360.0
-pct_degree_required      0.4
-opm_degree_required      False
-degree_requirement       credential
-typical_entry_grade      3.0
-tenure_kind              usually permanent
-```
-
-`degree_requirement` is `credential` rather than `none`: 9% of practical nurses
-hold a bachelor's, 87% hold some college, and the job needs an LPN diploma.
-
-Four sources are combined because no single one is reliable. The `pct_*` columns
-come from regex over posting text (`pipeline/quals.py`), which federal wording
-defeats routinely by stating requirements in the negative:
-
-> This matters more than it sounds. Federal postings routinely state requirements
-> in the negative — "this position does not have a positive education
-> requirement", "no substitution of education for experience is permitted" — so a
-> naive pattern scores the exact opposite of the truth. Measured before the fix:
-> `degree_required` 5 of 6 hits were false, 4 of them outright negations.
-
-About 6% of the OPM education field is miscoded as well.
-
-Shipped in `site/data.json`:
-
-```json
-{
- "series": "0620",
- "series_name": "Practical nurse",
- "hires_per_year": 1914,
- "reachable_open_now": 102,
- "degree_requirement": "credential",
- "tenure_kind": "usually permanent",
- "typical_entry_grade": 3,
- "profile": [0, 0, 0, 0, 1, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 1]
-}
-```
-
----
-
-## s5 — writing the questions
-
-`pipeline/questions_config.yaml`: generate with `gpt-5.4-mini`, rate with
-`gpt-5.4-nano`, `temperature: 0.0`, `scale_max: 4`.
-
-Targets are series with ≥250 permanent entry-grade hires since 2021, excluding
-`never_reachable` and `dormant`, capped at 200. The last run used 175.
-
-### What the model is shown
-
-Both prompts describe an occupation through `_occ_blurb`, and nothing else about
-it reaches the model. The posting text comes from stage 2:
-
-```sql
-SELECT series, list({'title': title, 'summary': summary, 'quals': quals})[1:3] AS text_sample
-FROM (
-  SELECT {series} AS series, positionTitle AS title,
-         substr(COALESCE(json_extract_string({D},'$.UserArea.Details.JobSummary'),''), 1, 700) AS summary,
-         substr(COALESCE(json_extract_string({D},'$.QualificationSummary'),''), 1, 900) AS quals,
-         row_number() OVER (PARTITION BY {series}
-                            ORDER BY length(COALESCE(json_extract_string({D},'$.QualificationSummary'),'')) DESC) AS rk
-  FROM read_parquet([{urls}]), json_each(JobCategories) AS s
-  WHERE {reach}
-) WHERE rk <= 3 GROUP BY series
-```
-
-Three announcements per series, chosen by longest `QualificationSummary`, drawn
-only from announcements the public can apply to. 419 series get a sample. The
-median series has 7 such announcements to draw from; practical nurse has 1,176.
-
-The blurb assembled from that:
-
-```python
-def _occ_blurb(r, text_by_series=None) -> str:
-    titles = json.loads(r.common_titles)[:4]
-    bits = [f"{r.series_name} (series {r.series})"]
-    if titles:
-        bits.append("posted as: " + "; ".join(titles))
-    if r.ce_description:
-        bits.append(r.ce_description[:220])
-    facts = []
-    if r.pct_degree_required >= 25:
-        facts.append(f"{r.pct_degree_required:.0f}% of entry postings require a degree")
-    if r.pct_license_or_cert >= 50:
-        facts.append(f"{r.pct_license_or_cert:.0f}% want a licence/certification")
-    if r.pct_age_limit >= 25:
-        facts.append("has a maximum entry age")
-    if r.pct_clearance >= 40:
-        facts.append(f"{r.pct_clearance:.0f}% need a clearance")
-    if facts:
-        bits.append("; ".join(facts))
-    bits.append(f"~{r.hires_per_year:.0f} permanent entry hires/yr")
-    out = " | ".join(bits)
-    # Ground the model in what postings actually say rather than letting it rate
-    # from the job title. Without this the whole instrument is one model's
-    # impression of federal work, validated against itself.
-    if text_by_series:
-        sample = text_by_series.get(r.series, [])
-        if sample:
-            out += "\n  What real announcements say about this work:\n" + "\n".join(
-                f"   - {d.get('title','')}: {(d.get('summary') or '')[:400]}"
-                for d in sample[:2])
-    return out
-```
-
-So of the three sampled announcements the prompt uses two, and cuts each summary
-to 400 characters. `quals` is stored at 900 characters per posting and never
-sent. The `pct_*` thresholds mean a qualification fact only appears once it
-clears 25–50%, which is why practical nurse shows the licence line and no degree
-line.
+Generating with `gpt-5.4-mini`, rating with `gpt-5.4-nano`, temperature
+0.0, scale 0–4.
+6 independent instruments are drawn and the best kept, because
+generation swings run to run while re-rating the same items does not.
 
 ### Generation — system prompt
 
 ```
-You write items for a career-matching instrument for federal jobs. The existing
-instrument fails because its items do not separate the occupations that actually
-hire: its 30 biggest entry-level hirers sit at 0.19 mean profile similarity, and
-pairs like criminal investigating vs customs interdiction are indistinguishable
-to it even though one hires thousands and the other hires nobody. Your items
-must separate real jobs.
+You write items for a career-matching instrument for federal jobs. Each item is one kind of work, and a respondent rates how much they would want to do it. The instrument is only useful when occupations are rated differently from each other: if two jobs score alike on every item, no answer a person gives can tell them apart. Write items that split the occupations you are shown.
 
 Draw items from these axes:
 - Who you deal with all day: patients, inmates, taxpayers, travellers, soldiers, applicants, scientists, no one
@@ -282,232 +146,182 @@ Draw items from these axes:
 - Rhythm and stakes: same task repeated to a standard, one long case at a time, emergencies, seasonal surges
 - What a wrong call costs: money, a legal outcome, someone's health, someone's safety, nothing much
 
-Write each item as a plain description of the activity, in the imperative, the
-way a job description would put it — e.g. "Explain rules, benefits and next
-steps to people worried about their own case, with every conversation
-different." Two sentences at most. Never begin with "Would you rather", "Do you
-like", "Are you interested in", or any question form. No question marks.
+Write each item as a plain description of the activity, in the imperative, the way a job description would put it — e.g. "Explain rules, benefits and next steps to people worried about their own case, with every conversation different." Two sentences at most. Never begin with "Would you rather", "Do you like", "Are you interested in", or any question form. No question marks.
 
-Do not write generic interest items ("working with data"). Do not write two
-items that would score the same across these occupations. Do not ask about
-skills or qualifications the person already has — describe the work itself, so
-a 17-year-old can react to it. Every item must be one a real federal job would
-answer differently from most others on the list.
-```
 
-The user message lists 25 occupations in the format shown under Rating below,
-then:
-
-```
-Write {per} items that would separate these occupations from each other.
-(Independent attempt {n}: write a different set from what an obvious first pass
-would produce.)
-```
-
-### Generation — response
-
-Three items from one batch, verbatim from `data/.llm_cache`:
-
-```json
-{"questions": [
-  {"text": "Walk a hospital ward or clinic floor and clean teeth, apply preventive treatments, and calm patients who are sitting in the chair for care. Follow the dentist's plan and adjust to each patient's mouth, pain, and anxiety.",
-   "axis": "who you deal with all day",
-   "separates": "Dental hygiene vs Laundry working"},
-  {"text": "Sort, wash, dry, fold, and move soiled linen through the laundry side of a medical facility until it is ready for clean distribution. Keep the same processing pace hour after hour and make sure every load is handled to standard.",
-   "axis": "rhythm and stakes",
-   "separates": "Laundry working vs Public affairs"},
-  {"text": "Stand at a border, port, or inspection point and examine travelers, cargo, or shipments before they pass through. Make quick calls that can affect safety, enforcement, and whether people or goods are allowed onward.",
-   "axis": "where the work physically happens",
-   "separates": "Agricultural commodity grading vs Fuel distribution system operating"}
-]}
+Do not write generic interest items ("working with data"). Do not write two items that would score the same across these occupations. Do not ask about skills or qualifications the person already has — describe the work itself, so a 17-year-old can react to it. Every item must be one a real federal job would answer differently from most others on the list.
+Do not end an item by restating the axis you drew it from. Clauses like "where the wrong call can affect safety", "the main cost of a mistake is lost time or money", "with the same tasks repeated to a standard" or "in a rhythm where one urgent call interrupts the next" read as machine-written and get stripped by hand every time they appear. Describe the work and stop.
 ```
 
 ### Rating — system prompt
 
 ```
-You are rating one federal occupation against a list of statements about work.
-Use the real posting titles and qualification facts supplied, not your general
-impression of the job title. Score how central each statement is to the everyday
-work of someone hired into this occupation at entry level.
+You are rating one federal occupation against a list of statements about work. Use the real posting titles and qualification facts supplied, not your general impression of the job title. Score how central each statement is to the everyday work of someone hired into this occupation at entry level.
 ```
 
-### Rating — user prompt
+### Rating — one real call, in full
 
-One call, in full. Cache key `26b559d9bf6b6efa488215fd21b65e10`.
+Cache key `8cee1ad9808b3dd9e6b43e2a0f113912`. The prompt is rebuilt from the code and hashed the way
+`pipeline/llm.py` hashes it, so this is the call that produced the response
+below, not a reconstruction of one like it.
 
 ```
 Occupation:
 Practical nurse (series 0620) | posted as: Licensed Practical Nurse; Practical Nurse (Outpatient); Practical Nurse (Family Medicine); Licensed Practical/Vocational Nurse | You will care for patients with practices that do not require a professional nurse education. In this field, you should have a practical or vocational nursing license from your state, territory or Washington, D.C. | 100% want a licence/certification | ~1914 permanent entry hires/yr
-  What real announcements say about this work:
-   - Licensed Practical Nurse - Patient Aligned Care Team: This position is eligible for the Education Debt Reduction Program (EDRP), a student loan payment reimbursement program. You must meet specific individual eligibility requirements in accordance with VHA policy and submit your EDRP application within four months of appointment. Program Approval, award amount (up to $200,000) and eligibility period (one to five years) are determined by the VHA Educa
-   - Licensed Vocational Nurse (Community Care) - EDRP Authorized: This position is eligible for the Education Debt Reduction Program (EDRP), a student loan payment reimbursement program. You must meet specific individual eligibility requirements in accordance with VHA policy and submit your EDRP application within four months of appointment. Program Approval, award amount (up to $200,000) and eligibility period (one to five years) are determined by the VHA Educa
+  What real announcements say the work is:
+   - Practical Nurse (Veterans Health Administration): VA Careers - Licensed Practical Nurse: https://youtube.com/embed/Ae85IP1Oiz4 Total Rewards of a Allied Health Professional ROLE RESPONSIBILITIES AND ACCOUNTABILITIES: This is an advanced level PACT LPN position. You will monitor and capture workload credit, develop reporting procedures and participate in performance improvement activities aimed at improving patient care access and PACT team processes. For all assignments above the full performance level, the higher-level duties must consist of s
+   - Practical Nurse (Defense Health Agency): Review patient medical history. Perform or assist in the performance of a number of specialized medical and minor surgical procedures. Administer medications by oral, topical, intradermal, subcutaneous, and intramuscular routes. Recognize the nature of emergencies and provide first aid in accordance with emergency protocols. Reinforce and reiterate instructions previously presented by the physician or nurse.
+   - Practical Nurse (Outpatient) (Department of Defense): Provides practical nursing care to patients in the outpatient clinic with a variety of medical conditions. Performing tasks such as recording vital signs, ordering labs, tracking patient’s laboratory, radiology orders and referral results to completion, and assisting in making future appointments. Initiates and maintains medical histories on patients, records observations, and identifies symptoms for use by the clinician. Medication Administration and Observation. Administers prescribed medicati
 
 Score every statement 0-4. Return one entry per statement id.
 
-0. Spend the day moving people through appointments, admissions, discharges and phone requests in a clinic or ward, keeping schedules and records aligned.
-1. Move through forests, brush and remote fire lines during seasonal surges, cutting line, mopping up hotspots and responding when conditions turn dangerous fast. Pass a fitness test.
-2. Install, modify and test the control and communication systems that keep power generation or spacecraft hardware running to specification, splitting your time between a desk and a test lab.
-3. Plan, deliver, and evaluate programs that help people learn, adjust, or improve their functioning at work, school, or in daily life.
-4. Collect, prepare, and handle patient samples, records, or equipment needed for diagnosis and treatment, following established clinical procedures.
-5. Keep a radio or phone line open for emergencies, send the right unit to the right place, and update crews as the situation changes, with one urgent call interrupting the next.
-6. Assist with protecting public lands and facilities by guiding visitors, explaining rules and resources, and helping respond to hazards such as fire, water, or environmental damage.
-7. Inspect food, drugs, toys or household products at plants, warehouses or border points, sampling items and documenting violations before unsafe goods reach the public. What you write up can become a legal case.
-8. Provide direct care and support to patients in a clinical setting, helping with examinations, treatments, and basic comfort needs.
-9. Prepare, handle, and serve food, meals, or related supplies while following basic sanitation and storage procedures.
-10. Work on a flight line or in a hangar, taking apart, troubleshooting, repairing, and reassembling aircraft systems and components until the aircraft is ready to fly again.
-11. Perform hands-on support work to move, maintain, repair, operate, or prepare vehicles, equipment, buildings, grounds, and related materials.
-12. Track down unpaid federal taxes by meeting taxpayers one case at a time, explaining the debt, arranging collection and taking enforcement steps when the law allows.
-13. Monitor natural resources and field conditions, collecting observations, samples, and measurements to support conservation, research, and land management work.
-14. Inspect products, commodities, or materials to determine whether they meet required quality, grade, safety, or condition standards.
-15. Inspect, troubleshoot, repair, and maintain mechanical, electrical, and structural equipment and systems.
-16. Move from one patient area to another, handling people who are already in care and making sure the right sterile instruments, supplies, and equipment reach the right room before the next procedure starts.
-17. Keep a warehouse or commissary stocked by receiving shipments, moving pallets, marking items and putting goods where they can be found quickly, doing the same handling tasks the same way each time.
-18. Process vouchers, receipts and account entries, the same way each time, all day.
-19. Review passport, visa or mariner paperwork line by line and decide whether the request can be approved under the rules. Send back incomplete cases and move the clean ones forward.
-20. Work on a border, checkpoint or inspection line where travelers and shipments must be screened quickly and correctly.
-21. Review one long investigation file at a time, tracing names, transactions, records and patterns across databases to build a case for prosecutors or investigators.
-22. Repair propulsion, rudders, davits and other ship systems in a hangar, dry dock or waterfront maintenance shop. Make sure the vessel can move and operate safely before it goes back out.
-23. Analyze complex technical or scientific problems and turn findings into practical recommendations for decisions, plans, or operations.
-24. Track supplies, equipment, and materials as they are ordered, received, stored, issued, and inventoried.
+0. Speak with beneficiaries about their claims, gather facts and evidence, and make decisions that determine whether benefits are paid and how much. Explain rights, rules and next steps to people whose case is still open.
+1. Handle one long claim at a time, gathering evidence, interviewing people, and writing up a decision that will stand up to review.
+2. Walk a correctional unit, direct inmate movement, and respond when a fight, escape attempt, or other security problem starts to unfold.
+3. Review invoices, vouchers and account records to verify that charges are proper before money is paid or collected. Reconcile figures, correct errors and keep the financial paperwork moving for an office or program.
+4. Work through a stack of purchase requests, compare vendors, negotiate terms, and award contracts that keep an agency supplied without wasting money.
+5. Check travelers and cargo at a port of entry, deciding who and what can come through after a brief inspection and interview.
+6. Inspect vehicles, badges and cargo at a guarded gate, deciding who gets through and who is turned away. Stay alert for trespass, theft or trouble while making rounds around federal property.
+7. Review incoming requests line by line, identify exactly what records must be searched or released, and route each case through the next step.
+8. Track a stack of budget transactions, reconcile figures against funding targets, and flag anything that would change the status of funds.
+9. Review applications, interview people, and weigh evidence before deciding whether a person meets the standard for protection or relief in a case that can change their legal status.
+10. Clean and treat patients' teeth, work around medical complications and anxiety, and adjust care to what the person in the chair can tolerate that day.
+11. Inspect aircraft wiring, sensors, and integrated electronic boxes on the flight line, then troubleshoot failures and replace components until the system passes operational checks.
+12. Move parts, tools, and supplies to the exact work area before mechanics stall, checking incoming shipments and shifting priorities as repair jobs change.
+13. Compare spending plans, obligations, and reimbursements against the rules, then recommend whether a charge should be accepted or denied.
+14. Spend the day in a hospital ward or clinic moving patients through appointments, answering their questions, and keeping their records and referrals moving.
+15. Track and reconcile shelves, bins, and issue records for parts and supplies that must match the count on the floor, then chase down every mismatch until the paperwork and the stock agree.
+16. Issue, account for, and inventory weapons and ammunition for security personnel, keeping every item traced and secured.
+17. Track complaints, allegations, and supporting records through an investigation, sort out which office should handle each matter, and build a case file from interviews and documents.
+18. Inspect work areas, products, or samples for cleanliness, quality, safety, or compliance with standards.
+19. Organize, maintain, and retrieve records, files, and reference materials so information can be found, used, and preserved correctly.
+20. Inspect technical systems and equipment, diagnose problems, and plan or oversee maintenance, repair, installation, or modification work.
+21. Monitor natural areas, facilities, and public use to protect people, property, and environmental resources. Report hazards, enforce basic rules, and take action to prevent damage, theft, fire, or unsafe conditions.
+22. Prepare, review, and edit written or visual information for official use, public communication, or archival and administrative purposes.
+23. Provide guidance, supervision, or support services to people in an institutional, educational, or community setting. Document needs, progress, and outcomes, and coordinate with other staff to help carry out programs or services.
+24. Review applications, records, statements, and other evidence to determine whether people or documents meet legal or regulatory requirements.
 ```
 
-### Rating — response
+### Rating — the response
 
 ```json
 {"ratings": [
   {"question_id": 0, "score": 0}, {"question_id": 1, "score": 0}, {"question_id": 2, "score": 0},
-  {"question_id": 3, "score": 0}, {"question_id": 4, "score": 1}, {"question_id": 5, "score": 0},
-  {"question_id": 6, "score": 0}, {"question_id": 7, "score": 0}, {"question_id": 8, "score": 4},
-  {"question_id": 9, "score": 0}, {"question_id": 10, "score": 0}, {"question_id": 11, "score": 0},
-  {"question_id": 12, "score": 0}, {"question_id": 13, "score": 0}, {"question_id": 14, "score": 0},
-  {"question_id": 15, "score": 0}, {"question_id": 16, "score": 3}, {"question_id": 17, "score": 0},
-  {"question_id": 18, "score": 0}, {"question_id": 19, "score": 0}, {"question_id": 20, "score": 0},
-  {"question_id": 21, "score": 0}, {"question_id": 22, "score": 0}, {"question_id": 23, "score": 0},
-  {"question_id": 24, "score": 1}
+  {"question_id": 3, "score": 0}, {"question_id": 4, "score": 0}, {"question_id": 5, "score": 0},
+  {"question_id": 6, "score": 0}, {"question_id": 7, "score": 0}, {"question_id": 8, "score": 0},
+  {"question_id": 9, "score": 0}, {"question_id": 10, "score": 4}, {"question_id": 11, "score": 0},
+  {"question_id": 12, "score": 0}, {"question_id": 13, "score": 0}, {"question_id": 14, "score": 3},
+  {"question_id": 15, "score": 0}, {"question_id": 16, "score": 0}, {"question_id": 17, "score": 0},
+  {"question_id": 18, "score": 1}, {"question_id": 19, "score": 2}, {"question_id": 20, "score": 0},
+  {"question_id": 21, "score": 0}, {"question_id": 22, "score": 0}, {"question_id": 23, "score": 1},
+  {"question_id": 24, "score": 0}
 ]}
 ```
 
-That array is the `profile` for 0620 above. Missing cells are filled with the
-item's column mean; over 25% missing raises.
+That array is the profile shipped for series 0620:
 
----
-
-## The objective
-
-`pipeline/s5_questions.py`, where `P` is occupations × items.
-
-```python
-def _score_instrument(P, hires, names, cfg):
-    w  = hires / hires.sum()
-    wm = (w[:, None] * P).sum(0)
-    wv = (w[:, None] * (P - wm) ** 2).sum(0)      # hiring-weighted variance per item
-    sd = P.std(1, keepdims=True); sd[sd == 0] = 1e-9
-    Pz = (P - P.mean(1, keepdims=True)) / sd
-    S  = Pz @ Pz.T / P.shape[1]                   # occupation x occupation similarity
-    top = np.argsort(-hires)[:30]                 # the 30 biggest entry-level hirers
-    sub = S[np.ix_(top, top)]
-    twins = [(names[top[a]], names[top[b]], round(float(sub[a, b]), 3))
-             for a in range(len(top)) for b in range(a + 1, len(top))
-             if sub[a, b] >= cfg["scoring"]["report_twin_threshold"]]   # 0.80
-    return {"hiring_weighted_var": wv,
-            "mean_similarity_top30": float(sub[~np.eye(len(top), dtype=bool)].mean()),
-            "unresolvable_twins": twins}
-```
-
-```python
-def _objective(P, hires, names, cfg, baseline_coverage=None):
-    m = _score_instrument(P, hires, names, cfg)
-    if baseline_coverage is not None:
-        cov = _respondent_spread(P)
-        if cov < COVERAGE_FLOOR * baseline_coverage:      # 0.95
-            return float("inf")
-    return m["mean_similarity_top30"] + 0.02 * len(m["unresolvable_twins"])
-```
-
-Lower is better. Coverage is a constraint, not a weighted term:
-
-```python
-def _respondent_spread(P, n=3000, seed=0):
-    sd = P.std(1, keepdims=True); sd[sd == 0] = 1e-9
-    Pz = (P - P.mean(1, keepdims=True)) / sd
-    rng = np.random.default_rng(seed)
-    R = rng.integers(0, 5, size=(n, P.shape[1])).astype(float)
-    z = (R - R.mean(1, keepdims=True)) / (R.std(1, keepdims=True) + 1e-100)
-    top1 = np.argmax(z @ Pz.T / P.shape[1], axis=1)
-    _, counts = np.unique(top1, return_counts=True)
-    p = counts / counts.sum()
-    effective = float(np.exp(-(p * np.log(p)).sum()))     # exp(entropy)
-    return effective / len(Pz)
-```
-
-Pruning drops items with hiring-weighted variance < `0.35`, then one of any item
-pair with |r| ≥ `0.80`, keeping the higher-variance one, then restores the best
-item from any axis it emptied. `n_samples: 3` generations, best kept.
-`residual_rounds: 2` of six items each, kept only if the objective improves.
-
-### Measured
-
-Same 175 occupations, same formula.
-
-| item set | mean similarity, top 30 | distinct #1 of 5,000 | tied pairs |
-|---|---|---|---|
-| official, 32 items | 0.169 | — | 10 |
-| generated, pruned | 0.032 | — | 16 |
-| shipped, 25 items (14 narrow + 11 broad) | 0.067 | 232 | 8 |
-
-Pairs the official items cannot separate (`data/generated_questions_report.json`):
-
-```
-0.978  Customs and border protection            | Criminal investigating
-0.943  Border patrol enforcement                | Criminal investigating
-0.940  Border patrol enforcement                | Police
-0.930  Border patrol enforcement                | Customs and border protection
-0.916  Miscellaneous clerk and assistant        | General business and industry
-0.893  Human resources assistance               | Human resources management
-0.882  Miscellaneous administration and program | General business and industry
-0.834  Correctional officer                     | Police
-0.812  Contracting                              | Miscellaneous administration and program
-0.807  Nursing assistant                        | Practical nurse
-```
-
-Item edits re-rate the catalogue and are rejected unless the numbers hold:
-
-```python
-BAND = {"similarity": 0.090, "cov": 205, "ties": 11}
-...
-if not (sim <= BAND["similarity"] and cov >= BAND["cov"] and ties <= BAND["ties"]):
-    raise SystemExit("reworded set fell outside the band — not promoting")
+```json
+[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 3, 0, 0, 0, 1, 2, 0, 0, 0, 1, 0]
 ```
 
 ---
 
-## Scoring in the browser
+## s5d — choosing the instrument
 
-`site/app.js`. No server: `data.json` carries the questions, the 302 profiles,
-and everything on a card.
+Narrow items separate particular occupations; broad items cover kinds of work
+the narrow ones miss. The split between them is not assumed. Every split that
+clears the reach floor is rated for real and compared on what it does, because
+profiles rated in separate calls are not good enough to choose between them —
+they predicted 0.140 similarity for a split that measured 0.066.
 
-```js
-function zscore(v) {
-  const mean = v.reduce((x, y) => x + y, 0) / v.length;
-  const sd = Math.sqrt(v.reduce((x, y) => x + (y - mean) ** 2, 0) / v.length);
-  ...
-}
-
-function rank(answers) {
-  const z = zscore(answers);
-  // Identical answers to every question make every correlation 0/0 = NaN,
-  // and NaN comparators quietly stop the sort from ranking. Treat as 0.
-  return state.series
-    .map((s) => {
-      const fit = pearson(z, s.profile);
-      return { s, fit: Number.isFinite(fit) ? fit : 0 };
-    })
-    .sort((a, b) => b.fit - a.fit);
-}
+```python
+# The proxy only decides which splits are worth measuring. It is not good
+# enough to choose between them: profiles rated in separate calls predicted
+# similarity 0.140 for 17 + 8 that measured 0.066, and 2 collapses for
+# 13 + 12 that measured 4. So every split clearing the reach floor is rated
+# for real and compared on what it actually does. Responses are cached, so
+# this is paid once.
+eligible = [t for t in trials if t["cov"] >= REACH_FLOOR] or trials
+print(f"\n  {len(eligible)} of {len(trials)} splits clear the proxy reach floor "
+      f"of {REACH_FLOOR}; rating each of them for real")
 ```
 
-Answers are 1–5, one digit each: `?a=5235412534251345231453241`. A link of the
-wrong length, or with a digit off the scale, is ignored.
+### Why not ties, and why not similarity
+
+A tie is not a defect on its own. Contact representative and
+Veterans claims examining really do resemble each other, and a quiz
+that claimed to separate them on interest alone would be lying. So each tied
+pair is checked against the two occupations' posting text:
+
+```python
+def _vectors(docs):
+    """TF-IDF, normalised, one vector per occupation."""
+    n = len(docs)
+    df = Counter()
+    for t in docs.values():
+        df.update(set(t))
+    idf = {w: math.log(n / c) for w, c in df.items()}
+    out = {}
+    for s, t in docs.items():
+        v = {w: (1 + math.log(c)) * idf.get(w, 0.0) for w, c in Counter(t).items()}
+        norm = math.sqrt(sum(x * x for x in v.values())) or 1.0
+        out[s] = {w: x / norm for w, x in v.items()}
+    return out
+```
+
+Selecting on similarity instead chose a set with 8 collapses; selecting on reach
+chose 0.148 similarity. Selecting on collapses chose this one.
+
+---
+
+## What the site ships
+
+```
+25 questions: 18 narrow, 7 broad
+similarity among the 30 biggest hirers : 0.108
+tied pairs                             : 10
+occupations reachable as a top match   : 263 of 302
+```
+
+The official 32 questions, scored the same way on the same occupations, come out
+at 0.169 with 10 tied pairs.
+
+Every rating call behind the live site is browsable at
+[/appendix](https://usajobs-career-explorer.abigailhaddad.com/appendix): the
+postings each occupation was described by, the exact prompt, and the scores
+returned, with each pairing verified by hash.
+
+---
+
+## The other stages
+
+```
+s1  data/questions.parquet        32 official questions
+    data/series_profiles.parquet   302 occupations, 32 floats each
+s2  data/openings.parquet          605 rows x 26 cols
+    data/series_text.parquet       418 occupations with posting text
+s3  data/hires.parquet             645 rows x 17 cols
+s7  data/opm_standards.parquet     415 rows
+s4  site/data.json                 the whole site
+```
+
+Definitions that decide what counts as an entry-level job:
+
+```python
+PUBLIC_PATHS = ("public", "The public", "student", "Students",
+                  "graduates", "Recent graduates")
+GRAD_PATHS = ("student", "Students", "graduates", "Recent graduates")
+```
+
+```python
+PERM = "(tenure LIKE 'TENURE GROUP 1%' OR tenure LIKE 'TENURE GROUP 2%')"
+ENTRY = (f"((pay_plan_code IN ({_sql_list(GS_LIKE)}) AND TRY_CAST(grade AS INT) "
+         f"BETWEEN 1 AND {ENTRY_MAX_GRADE}) OR pay_plan_code IN ({_sql_list(TRADE_PLANS)}))")
+```
+
+Banded pay plans are excluded rather than counted: a low number there means
+senior, and 575 Senior Executive Service postings were being read as entry level
+because their grades read 01.
 
 ---
 
@@ -515,4 +329,5 @@ wrong length, or with a digit off the scale, is ignored.
 
 The ratings are one model's reading of each occupation, from posting text rather
 than job titles. Nothing here measures whether a rating is correct. What is
-measured is whether the questions produce ratings that tell occupations apart.
+measured is whether the questions produce ratings that tell occupations apart,
+and whether the pairs they cannot tell apart are genuinely alike.
