@@ -84,6 +84,9 @@ not, 4 needing a credential, 1 unknown. The credential category exists for
 practical nurses: only 9% hold a bachelor's, so the data says no degree needed,
 but you can't do the job without an LPN diploma.
 
+[METHODOLOGY.md](METHODOLOGY.md) has the rest: the real prompts, a real model
+response, sample rows from every stage, and the scoring code.
+
 ## Writing the questions
 
 The questions only help if occupations are rated differently on them. Two jobs
