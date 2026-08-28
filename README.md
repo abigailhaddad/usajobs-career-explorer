@@ -157,6 +157,10 @@ similar ratings on them, and in exchange the quiz can return 263 of the 302
 occupations as somebody's top match. The split is chosen by rating every
 candidate split for real, not by assuming one.
 
+`data/keep/` holds the question set that is live, copied aside on purpose. Stage
+5 draws six instruments each run and keeps whichever measures best, so a rebuild
+produces a different 25 — restore from there to put this one back.
+
 Stage 5 builds all of that in one pass — `pipeline/families.py`,
 `s5_questions.py`, `broad_items.py`, `combine.py`, `tie_audit.py` — so the
 question set the site ships can be rebuilt from the repo. It could not be
