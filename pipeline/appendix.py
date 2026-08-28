@@ -166,72 +166,155 @@ TEMPLATE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Every LLM call behind the quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="shared/shared.css">
 <style>
- :root { --sui-primary: #1a4480; --sui-accent: #1a4480; --sui-accent-light: #cfe0f5;
-         --sui-accent-lighter: #eef3fa; --sui-bg-alt: #f7f8fa; }
- body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-        color: #1b1b1b; padding: 2rem 1.25rem 4rem; }
- .wrap { max-width: 76rem; margin: 0 auto; }
- h1 { font-size: 1.6rem; margin-bottom: .2rem; }
- h2 { font-size: 1.15rem; margin-top: 2.5rem; padding-top: 1.2rem;
-      border-top: 1px solid #e6e6e6; }
- h4 { margin: 1rem 0 .35rem; font-size: .78rem; text-transform: uppercase;
-      letter-spacing: .05em; color: #1a4480; }
- .lede { color: #555; }
- pre { background: #f7f8fa; border: 1px solid #e6e6e6; border-radius: 6px; padding: .8rem;
-       white-space: pre-wrap; word-wrap: break-word; font-size: .78rem; line-height: 1.45; }
- table.dataTable td { vertical-align: top; font-size: .88rem; }
- td.expand-control { cursor: pointer; width: 2rem; color: #1a4480; }
+ /* Bootstrap ships cornflower blue; the site is navy. Recolour the components
+    that show it rather than fighting each one where it appears. */
+ :root {
+   --navy: #1a4480; --navy-d: #12315e; --pale: #eef3fa; --line: #e3e7ec;
+   --ink: #1b1b1b; --muted: #5d6470;
+   --bs-primary: #1a4480; --bs-link-color: #1a4480; --bs-link-hover-color: #12315e;
+   --sui-primary: #1a4480; --sui-accent: #1a4480; --sui-accent-light: #cfe0f5;
+   --sui-accent-lighter: #eef3fa; --sui-bg-alt: #f7f8fa;
+ }
+ body { font: 16px/1.6 "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        color: var(--ink); background: #fff; margin: 0; }
+ .wrap { max-width: 78rem; margin: 0 auto; padding: 0 1.5rem 5rem; }
+
+ /* Masthead */
+ .masthead { background: var(--navy); color: #fff; padding: 2rem 0 1.6rem; margin-bottom: 0; }
+ .masthead .wrap { padding-bottom: 0; }
+ .masthead h1 { font-size: 1.55rem; font-weight: 700; margin: 0 0 .35rem; }
+ .masthead p { margin: 0; color: #cfe0f5; font-size: .95rem; max-width: 54rem; }
+ .masthead a { color: #fff; text-decoration: underline; }
+ .stats { display: flex; gap: 2.2rem; margin-top: 1.1rem; flex-wrap: wrap; }
+ .stat b { display: block; font-size: 1.35rem; line-height: 1.2; }
+ .stat span { font-size: .78rem; color: #b8cdea; text-transform: uppercase; letter-spacing: .04em; }
+
+ /* Tabs */
+ .nav-tabs { border-bottom: 2px solid var(--line); margin: 1.6rem 0 1.4rem; gap: .2rem; }
+ .nav-tabs .nav-link { border: 0; border-bottom: 3px solid transparent; border-radius: 0;
+                       color: var(--muted); font-weight: 600; font-size: .92rem;
+                       padding: .6rem 1rem; }
+ .nav-tabs .nav-link:hover { color: var(--navy); border-bottom-color: #cfe0f5; }
+ .nav-tabs .nav-link.active { color: var(--navy); border-bottom-color: var(--navy);
+                              background: transparent; }
+ .tab-note { color: var(--muted); font-size: .9rem; margin: 0 0 1rem; max-width: 56rem; }
+
+ h2 { font-size: 1.1rem; font-weight: 700; margin: 1.8rem 0 .5rem; }
+ h4 { margin: 1.1rem 0 .35rem; font-size: .72rem; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--navy); font-weight: 700; }
+ pre { background: #f7f8fa; border: 1px solid var(--line); border-radius: 8px; padding: .9rem;
+       white-space: pre-wrap; word-wrap: break-word; font-size: .78rem; line-height: 1.5;
+       color: #2a2f36; }
+
+ /* Table */
+ table.dataTable { border-collapse: separate !important; }
+ table.dataTable thead th { background: #f7f8fa; border-bottom: 2px solid var(--line) !important;
+                            font-size: .72rem; text-transform: uppercase; letter-spacing: .05em;
+                            color: var(--muted); font-weight: 700; }
+ table.dataTable td { vertical-align: top; font-size: .88rem; border-top: 1px solid #f0f2f5; }
+ table.dataTable tbody tr.shown { background: var(--pale); }
+ td.expand-control { cursor: pointer; width: 2.2rem; color: var(--navy); font-size: .8rem; }
  .expand-icon { display: inline-block; transition: transform .15s; }
  .expand-icon.expanded { transform: rotate(90deg); }
- .child-panel { background: #fbfcfd; padding: 1rem 1.2rem; }
- .posting { border-left: 3px solid #dfe6ef; padding-left: .8rem; margin: .6rem 0; }
- .posting p { margin: .3rem 0 0; font-size: .84rem; color: #333; }
- .agency { color: #777; font-size: .78rem; margin-left: .5rem; }
- .ok { color: #2a6f3b; } .miss { color: #a33; }
+ .num { font-variant-numeric: tabular-nums; }
+
+ /* Pagination and controls, in navy */
+ .page-link { color: var(--navy); border-color: var(--line); }
+ .page-link:hover { background: var(--pale); color: var(--navy-d); }
+ .page-item.active .page-link { background: var(--navy); border-color: var(--navy); color: #fff; }
+ .page-item.disabled .page-link { color: #aab0b8; }
+ .dataTables_info, .dataTables_length label { color: var(--muted); font-size: .85rem; }
+ .form-select, .form-control { border-color: #ccd2da; }
+ .form-select:focus, .form-control:focus { border-color: var(--navy);
+                                           box-shadow: 0 0 0 .2rem rgba(26,68,128,.15); }
+ .btn-primary { background: var(--navy); border-color: var(--navy); }
+ .btn-primary:hover { background: var(--navy-d); border-color: var(--navy-d); }
+
+ /* Expanded panel */
+ .child-panel { background: #fbfcfd; padding: 1.1rem 1.3rem; border-left: 3px solid var(--navy); }
+ .posting { border-left: 3px solid var(--line); padding-left: .85rem; margin: .7rem 0; }
+ .posting p { margin: .3rem 0 0; font-size: .85rem; color: #333; }
+ .agency { color: var(--muted); font-size: .78rem; margin-left: .5rem; }
+ .ok { color: #2a6f3b; font-weight: 600; } .miss { color: #a33; font-weight: 600; }
  table.ratings { width: 100%; border-collapse: collapse; font-size: .85rem; }
- table.ratings td { padding: .22rem .5rem; border-top: 1px solid #eee; }
- td.s { width: 2rem; text-align: center; font-weight: 700; }
- .qid { width: 2.4rem; color: #999; font-size: .78rem; text-align: right; }
- .origin { width: 5rem; color: #777; font-size: .8rem; }
- .s0 { color: #ccc; } .s1 { color: #999; } .s2 { color: #444; }
- .s3 { color: #1a4480; } .s4 { color: #1a4480; background: #eef3fa; }
- .item { border-left: 3px solid #dfe6ef; padding-left: .8rem; margin: .6rem 0; }
+ table.ratings td { padding: .24rem .55rem; border-top: 1px solid #eef0f3; }
+ td.s { width: 2.2rem; text-align: center; font-weight: 700; }
+ .qid { width: 2.6rem; color: #9aa1ab; font-size: .78rem; text-align: right; }
+ .origin { width: 5rem; color: var(--muted); font-size: .8rem; }
+ .s0 { color: #ccd1d8; } .s1 { color: #9aa1ab; } .s2 { color: #444; }
+ .s3 { color: var(--navy); } .s4 { color: #fff; background: var(--navy); border-radius: 4px; }
+ .item { border-left: 3px solid var(--line); padding-left: .85rem; margin: .7rem 0; }
  .item p { margin: 0; font-size: .85rem; }
- .meta { color: #777; font-size: .75rem; }
-</style></head><body><div class="wrap">
+ .meta { color: var(--muted); font-size: .76rem; }
+ details.gen { border-top: 1px solid #f0f2f5; padding: .5rem 0; }
+ details.gen summary { cursor: pointer; }
+</style></head><body>
 
-<h1>Every LLM call behind the quiz</h1>
-<p class="lede">__N__ occupations, __MATCHED__ of them matched to the exact cached response.
-Each prompt is rebuilt from the code and hashed the way the pipeline hashes it; the key
-shown is where its response was found, so the pairing is checked rather than asserted.</p>
+<header class="masthead"><div class="wrap">
+  <h1>Every LLM call behind the quiz</h1>
+  <p>The questions on the quiz were written by a language model, and every occupation was
+  scored by one. This is all of it: the job postings each occupation was described by, the
+  exact prompt, and the scores that came back.
+  <a href="/">Back to the quiz</a></p>
+  <div class="stats">
+    <div class="stat"><b>__N__</b><span>occupations</span></div>
+    <div class="stat"><b>__MATCHED__</b><span>matched to their cached response</span></div>
+    <div class="stat"><b>__NQ__</b><span>questions</span></div>
+  </div>
+</div></header>
 
-<h2>Rating calls — <code>__RATE_MODEL__</code>, temperature 0</h2>
-<h4>System prompt, identical for every occupation</h4>
-<pre>__RATE_SYSTEM__</pre>
+<div class="wrap">
+<ul class="nav nav-tabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab"
+      data-bs-target="#tab-calls" type="button">Rating calls</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab"
+      data-bs-target="#tab-questions" type="button">The questions</button></li>
+  <li class="nav-item"><button class="nav-link" data-bs-toggle="tab"
+      data-bs-target="#tab-generation" type="button">Writing the questions</button></li>
+</ul>
 
-<table id="calls" class="table table-hover" style="width:100%">
-  <thead><tr>
-    <th></th><th>Occupation</th><th>Series</th><th>Hires/yr</th>
-    <th>Postings</th><th>Hiring agency</th><th>Work family</th>
-    <th>Education needed</th><th>Response</th>
-  </tr></thead>
-  <tbody></tbody>
-</table>
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="tab-calls">
+    <p class="tab-note">One row per occupation, rated by <code>__RATE_MODEL__</code> at
+    temperature 0. Each prompt is rebuilt from the code and hashed the way the pipeline
+    hashes it, so the key shown is where its response was found — the pairing is checked
+    rather than asserted. Open a row to see the postings, the prompt and the scores.</p>
+    <table id="calls" class="table table-hover" style="width:100%">
+      <thead><tr>
+        <th></th><th>Occupation</th><th>Series</th><th>Hires/yr</th>
+        <th>Postings</th><th>Hiring agency</th><th>Work family</th>
+        <th>Education needed</th><th>Response</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-<h2>The __NQ__ questions</h2>
-<table class="table"><tbody>__QROWS__</tbody></table>
+  <div class="tab-pane fade" id="tab-questions">
+    <p class="tab-note">The __NQ__ questions the quiz asks. Narrow ones are written to
+    separate particular occupations; broad ones cover kinds of work the narrow ones miss.</p>
+    <h4>System prompt used to score every occupation</h4>
+    <pre>__RATE_SYSTEM__</pre>
+    <table class="table"><tbody>__QROWS__</tbody></table>
+  </div>
 
-<h2>Generation calls — <code>__GEN_MODEL__</code></h2>
-<h4>System prompt</h4>
-<pre>__GEN_SYSTEM__</pre>
-<p class="lede">The cache stores responses keyed by a hash of the request, and a generation
-prompt depends on which occupations were batched together on that run, so these responses
-are not paired with their prompts.</p>
-<div id="gens"></div>
+  <div class="tab-pane fade" id="tab-generation">
+    <p class="tab-note">Candidate questions were written by <code>__GEN_MODEL__</code>, shown
+    real occupations and their posting text. The cache stores responses keyed by a hash of
+    the request, and a generation prompt depends on which occupations were batched together
+    on that run, so these responses are not paired with their prompts.</p>
+    <h4>System prompt</h4>
+    <pre>__GEN_SYSTEM__</pre>
+    <h2>Batches</h2>
+    <div id="gens"></div>
+  </div>
+</div>
 
 </div>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -284,6 +367,10 @@ function buildChildContent(r) {
 const { table } = initDataTableWithFilters({
   tableSelector: '#calls',
   tableOptions: {
+    // l length, r processing, t table, i info, p pagination — no 'f', which is
+    // DataTables' free-text box. Searching stays on because the column filters
+    // use it; the filtering people see goes through "+ Add Filter".
+    dom: 'lrtip',
     pageLength: 25,
     order: [[1, 'asc']],
     columnDefs: [
