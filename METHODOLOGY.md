@@ -202,6 +202,69 @@ Shipped in `site/data.json`:
 Targets are series with ≥250 permanent entry-grade hires since 2021, excluding
 `never_reachable` and `dormant`, capped at 200. The last run used 175.
 
+### What the model is shown
+
+Both prompts describe an occupation through `_occ_blurb`, and nothing else about
+it reaches the model. The posting text comes from stage 2:
+
+```sql
+SELECT series, list({'title': title, 'summary': summary, 'quals': quals})[1:3] AS text_sample
+FROM (
+  SELECT {series} AS series, positionTitle AS title,
+         substr(COALESCE(json_extract_string({D},'$.UserArea.Details.JobSummary'),''), 1, 700) AS summary,
+         substr(COALESCE(json_extract_string({D},'$.QualificationSummary'),''), 1, 900) AS quals,
+         row_number() OVER (PARTITION BY {series}
+                            ORDER BY length(COALESCE(json_extract_string({D},'$.QualificationSummary'),'')) DESC) AS rk
+  FROM read_parquet([{urls}]), json_each(JobCategories) AS s
+  WHERE {reach}
+) WHERE rk <= 3 GROUP BY series
+```
+
+Three announcements per series, chosen by longest `QualificationSummary`, drawn
+only from announcements the public can apply to. 419 series get a sample. The
+median series has 7 such announcements to draw from; practical nurse has 1,176.
+
+The blurb assembled from that:
+
+```python
+def _occ_blurb(r, text_by_series=None) -> str:
+    titles = json.loads(r.common_titles)[:4]
+    bits = [f"{r.series_name} (series {r.series})"]
+    if titles:
+        bits.append("posted as: " + "; ".join(titles))
+    if r.ce_description:
+        bits.append(r.ce_description[:220])
+    facts = []
+    if r.pct_degree_required >= 25:
+        facts.append(f"{r.pct_degree_required:.0f}% of entry postings require a degree")
+    if r.pct_license_or_cert >= 50:
+        facts.append(f"{r.pct_license_or_cert:.0f}% want a licence/certification")
+    if r.pct_age_limit >= 25:
+        facts.append("has a maximum entry age")
+    if r.pct_clearance >= 40:
+        facts.append(f"{r.pct_clearance:.0f}% need a clearance")
+    if facts:
+        bits.append("; ".join(facts))
+    bits.append(f"~{r.hires_per_year:.0f} permanent entry hires/yr")
+    out = " | ".join(bits)
+    # Ground the model in what postings actually say rather than letting it rate
+    # from the job title. Without this the whole instrument is one model's
+    # impression of federal work, validated against itself.
+    if text_by_series:
+        sample = text_by_series.get(r.series, [])
+        if sample:
+            out += "\n  What real announcements say about this work:\n" + "\n".join(
+                f"   - {d.get('title','')}: {(d.get('summary') or '')[:400]}"
+                for d in sample[:2])
+    return out
+```
+
+So of the three sampled announcements the prompt uses two, and cuts each summary
+to 400 characters. `quals` is stored at 900 characters per posting and never
+sent. The `pct_*` thresholds mean a qualification fact only appears once it
+clears 25–50%, which is why practical nurse shows the licence line and no degree
+line.
+
 ### Generation — system prompt
 
 ```
