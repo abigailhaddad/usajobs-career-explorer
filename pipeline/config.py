@@ -45,9 +45,18 @@ PUBLIC_PATHS = ("public", "The public", "student", "Students",
                   "graduates", "Recent graduates")
 GRAD_PATHS = ("student", "Students", "graduates", "Recent graduates")
 
-# Numerically-graded GS-like pay plans. WG/WL trades are handled separately:
-# they have no GS grade, so a grade<=9 test would wrongly read as "no entry door".
-GS_LIKE = ("GS", "GG", "GL", "GW", "FG", "IM", "ND", "DB")
+# Numerically-graded GS-like pay plans, where a low number really does mean
+# junior. WG/WL trades are handled separately: they have no GS grade, so a
+# grade<=9 test would wrongly read as "no entry door".
+#
+# ND, DB and IM were in this list and are not GS-like. They are demonstration
+# projects with pay BANDS, where a handful of bands span the whole GS range and
+# a low number means senior: ND-6 is a Distinguished Scientist. Counting them as
+# entry level made every one of physics' and mathematics' entry hires a senior
+# band scientist, 72% of computer science's, and 78% of computer engineering's.
+# Same trap as the ES postings that read as grade 01, one list further along.
+GS_LIKE = ("GS", "GG", "GL", "GW", "FG")
+BANDED_PLANS = ("ND", "DB", "IM")   # excluded on purpose; see above
 TRADE_PLANS = ("WG", "WL")
 ENTRY_MAX_GRADE = 9
 YOUNG_BRACKETS = ("LESS THAN 20", "20-24", "25-29")

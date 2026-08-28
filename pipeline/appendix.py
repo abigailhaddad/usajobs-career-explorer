@@ -123,7 +123,7 @@ def run(out: Path = None):
         postings = "".join(
             f'<div class="posting"><b>{esc(d.get("title"))}</b>'
             f'<span class="agency">{esc(d.get("agency"))}</span>'
-            f'<p>{esc((d.get("duties") or d.get("summary") or "")[:900])}</p></div>'
+            f'<p>{esc(d.get("duties") or d.get("summary") or "")}</p></div>'
             for d in c["sample"]) or '<p class="none">No posting text available.</p>'
 
         agencies = sorted({d.get("agency") for d in c["sample"] if d.get("agency")})

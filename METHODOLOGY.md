@@ -133,9 +133,9 @@ For Practical nurse that returns 5 postings:
 ```
 [Veterans Health Administration] Practical Nurse
 [Defense Health Agency] Practical Nurse
-[Other Agencies and Independent Organizations] Licensed Practical Nurse
+[Armed Forces Retirement Home] LICENSED PRACTICAL NURSE
 [Department of Defense] Practical Nurse (Outpatient)
-[Department of Justice] Practical Nurse (Dialysis LPN)
+[Bureau of Prisons/Federal Prison System] Practical Nurse (Dialysis LPN)
 ```
 
 ---
@@ -174,7 +174,7 @@ You are rating one federal occupation against a list of statements about work. U
 
 ### Rating — one real call, in full
 
-Cache key `1096433b455b02b49a267a06149905da`. The prompt is rebuilt from the code and hashed the way
+Cache key `822cde6495646cebd82b6933c313ad70`. The prompt is rebuilt from the code and hashed the way
 `pipeline/llm.py` hashes it, so this is the call that produced the response
 below, not a reconstruction of one like it.
 
@@ -184,59 +184,59 @@ Practical nurse (series 0620) | posted as: Licensed Practical Nurse; Practical N
   What real announcements say the work is:
    - Practical Nurse (Veterans Health Administration): VA Careers - Licensed Practical Nurse: https://youtube.com/embed/Ae85IP1Oiz4 Total Rewards of a Allied Health Professional ROLE RESPONSIBILITIES AND ACCOUNTABILITIES: This is an advanced level PACT LPN position. You will monitor and capture workload credit, develop reporting procedures and participate in performance improvement activities aimed at improving patient care access and PACT team processes. For all assignments above the full performance level, the higher-level duties must consist of significant scope, complexity (difficulty) and range of variety and be performed by the incumbent at least 25% of the time. Assignments associated with this position include, but are not limited to: Manages patient care problems and deviations using self-direction in accordance with VA Nursing Practice and LPN licensure standards. Maintains knowledge and skill to care for a wide range of patients, including those with chronic and acute illness. Demonstrates comprehensive understanding of disease conditions, nursing principles, and standards/practices. Assesses, records, and reports vital signs, neurological signs, weight, and blood glucose levels. Appropriately triages and prioritizes patient needs as routine, urgent, or emergent in the clinic setting and modifies patient care/treatment as needed. Checks patients into the clinic, interviews patient and/or significant other, and documents intake data as per policy. Possesses comprehensive knowledge of VA protocols and VHA directives related to clinic management, documentation, and computer technology. Demonstrates the ability to independently adjust or modify care being delivered. Responsibilities include prompt recognition and treatment of urgent/emergent patient care needs. Provides high quality nursing care using traditional and non-traditional modalities. Applies knowledge by considering the interrelationship between age, physical, emotional, social, cultural, and population-specific needs when providing care. Serves as a resource for complex/specialized procedures. Performs venipuncture for blood draws, prepares specimens for transport and processing, transcribes orders, accessions label, provides patient education about lab tests, etc. Demonstrates the knowledge and skill to interpret common test results and other medical data. Provides education to patients/families about preparation for procedures and/or diagnostic tests. Demonstrates knowledge and skill to incorporate patient education into care and modifies. Contributes to the interdisciplinary PACT team in development, implementation, and evaluation of the treatment plan. Communicates calmly, courteously, and professionally with all patients, personnel, and visitors while maintaining confidentiality in accordance with HIPAA regulations and Medical Center policies. Uses advanced skills to communicate with verbally or physically abusive patients or visitors using Prevention and Management of Disruptive Behavior (PMDB) principles and policy guidelines. Collaborates with the PACT team and other interdisciplinary services in the development, implementation, and evaluation of patient care. Duties include following up on abnormal results with the provider and educating patients/families on disease management and anticipated plan of care. Work Schedule: Monday - Friday, 8:00 am - 4:30 pm Recruitment Incentive (Sign-on Bonus): Not Authorized. Permanent Change of Station (Relocation Assistance): Not Authorized. EDRP Authorized: Former EDRP participants ineligible to apply for incentive. Contact VISN7EDRPFacilityCoordinators2@va.gov, the EDRP Coordinator for questions/assistance. Learn more Pay: Competitive salary and regular salary increases When setting pay, a higher step rate of the appropriate grade may be determined after consideration of higher or unique qualifications or special needs of the VA (Above Minimum Rate of the Grade). Paid Time Off: 37-50 days of annual paid time offer per year (13-26 days of annual leave, 13 days of sick leave, 11 paid Federal holidays per year) Selected applicants may qualify for credit toward annual leave accrual, based on prior [work experience] or military service experience. Parental Leave: After 12 months of employment, up to 12 weeks of paid parental leave in connection with the birth, adoption, or foster care placement of a child. Child Care Subsidy: After 60 days of employment, full time employees with a total family income below $144,000 may be eligible for a childcare subsidy up to 25% of total eligible childcare costs for eligible children up to the monthly maximum of $416.66. Retirement: Traditional federal pension (5 years vesting) and federal 401K with up to 5% in contributions by VA Insurance: Federal health/vision/dental/term life/long-term care (many federal insurance programs can be carried into retirement) Telework: Not Authorized. Virtual: This is not a virtual position. Functional Statement #: 534-58338F Permanent Change of Station (PCS): Not Authorized.
    - Practical Nurse (Defense Health Agency): Review patient medical history. Perform or assist in the performance of a number of specialized medical and minor surgical procedures. Administer medications by oral, topical, intradermal, subcutaneous, and intramuscular routes. Recognize the nature of emergencies and provide first aid in accordance with emergency protocols. Reinforce and reiterate instructions previously presented by the physician or nurse.
-   - Licensed Practical Nurse (Other Agencies and Independent Organizations): As a Licensed Practical Nurse, you will: Perform nursing assignments of a highly specialized nature to include medication administration and hands on nursing care. Identify Resident problems and provides input to the plan of care. Communicate responses and/or changes to others to include all personnel, physicians, and members of interdisciplinary teams. Describe the Resident in writing if indicated to include all the following: physical appearance, emotional status, Resident's interaction with staff and/or family, Resident's knowledge of disease process and Resident's verbal/nonverbal actions/responses. Candidates should be committed to improving the efficiency of the Federal government, passionate about the ideals of our American republic, and committed to upholding the rule of law and the United States Constitution.
+   - LICENSED PRACTICAL NURSE (Armed Forces Retirement Home): As a LICENSED PRACTICAL NURSE, you will: Perform nursing assignments of a highly specialized nature to include medication administration and hands on nursing care. Identify Resident problems and provides input to the plan of care. Communicate responses and/or changes to others to include all personnel, physicians, and members of interdisciplinary teams. Describe the Resident in writing if indicated to include all the following: physical appearance, emotional status, Resident's interaction with staff and/or family, Resident's knowledge of disease process and Resident's verbal/nonverbal actions/responses. Candidates should be committed to improving the efficiency of the Federal government, passionate about the ideals of our American republic, and committed to upholding the rule of law and the United States Constitution.
    - Practical Nurse (Outpatient) (Department of Defense): Provides practical nursing care to patients in the outpatient clinic with a variety of medical conditions. Performing tasks such as recording vital signs, ordering labs, tracking patient’s laboratory, radiology orders and referral results to completion, and assisting in making future appointments. Initiates and maintains medical histories on patients, records observations, and identifies symptoms for use by the clinician. Medication Administration and Observation. Administers prescribed medications with increased independence, ensuring proper patient dosages, routes, and times are followed. Educates patients and families about prescribed treatments, reinforcing adherence to the medical plan. Documents accurate administered medications and patient responses promptly in compliance with facility policies. Support for Medical Procedures and Emergency Response. Utilizes electronic health record and information technology as effective communication and management tools to facilitate the patient experience and coordination. Collaborates with the healthcare team to develop and adjust care plans based on patient progress and feedback. Participates in team briefings and debriefings to foster a collaborative approach to patient care. Assists in performing and managing medical procedures, physical examinations, and treatments. Ensures administrative requirements related to patient’s visit are completed timely and correctly.
-   - Practical Nurse (Dialysis LPN) (Department of Justice): Responsible for functioning within the scope of practice dictated by the authority of the Nurse Practice Act and Bureau of Prisons. Maintaining a current LPN license is a requirement of this position. Provides a full range of patient care to chronically ill dialysis inmates, under the supervision of the Supervisory Clinical Nurse, with guidance from the Charge Nurse. Prepares patients for specialized diagnostic and therapeutic procedures according to standard protocols. Maintains records of medications given. Reports and records adverse reactions through approved reporting mechanisms. Transcribes and carries out the wide variety of physician's orders according to established nursing policies pertaining to orders. Along with all other correctional institution employees, incumbent is charged with responsibility for maintaining security of the institution. The staff correctional responsibilities precede all others required by this position and are performed on a regular and recurring basis.
+   - Practical Nurse (Dialysis LPN) (Bureau of Prisons/Federal Prison System): Responsible for functioning within the scope of practice dictated by the authority of the Nurse Practice Act and Bureau of Prisons. Maintaining a current LPN license is a requirement of this position. Provides a full range of patient care to chronically ill dialysis inmates, under the supervision of the Supervisory Clinical Nurse, with guidance from the Charge Nurse. Prepares patients for specialized diagnostic and therapeutic procedures according to standard protocols. Maintains records of medications given. Reports and records adverse reactions through approved reporting mechanisms. Transcribes and carries out the wide variety of physician's orders according to established nursing policies pertaining to orders. Along with all other correctional institution employees, incumbent is charged with responsibility for maintaining security of the institution. The staff correctional responsibilities precede all others required by this position and are performed on a regular and recurring basis.
 
 Score every statement 0-4. Return one entry per statement id.
 
-0. Review benefit claims one case at a time, interview the person about their situation, gather evidence, and decide whether the claim is allowed or denied. Explain the decision, correct discrepancies, and update the record so the payment amount is right.
-1. Guide a veteran through a claims interview, gather missing evidence, and decide what the file needs before an award letter can go out.
-2. Stand at a clinic front desk and keep the appointment line moving while greeting patients, checking them in, and fixing routine scheduling problems as they come up.
-3. Prepare written explanations and status updates for people asking why a case is delayed, what records are being searched, and what comes next.
-4. Track detainee identity, prepare removal paperwork, and keep custody records straight while coordinating transport and release steps.
-5. Review a request for records, identify what documents must be gathered, and coordinate with other offices to assemble a complete response.
-6. Inspect cargo, travelers, and vehicles at a port of entry, decide who and what can enter, and stop prohibited goods before they cross the line.
-7. Receive emergency calls, sort out what is happening, and send the right responders while the situation is still unfolding. Keep radio traffic, computer logs, and unit status moving in a center where every minute can change the outcome.
-8. Move through a warehouse or storage area receiving shipments, checking counts, shelving items, and pulling supplies for issue or delivery. Use forklifts, pallet jacks, or hand trucks to keep stock organized and ready for the next request.
-9. Track a stack of budget transactions, reconcile commitments and obligations, and flag when spending plans need to be adjusted before funds run short.
-10. Stand at a hospital entrance or ward post and screen patients, visitors, and staff before they reach restricted areas, checking bags, badges, and weapons as part of the shift. Handle the first response when an alarm, disturbance, or suspicious person needs to be stopped, questioned, or detained.
-11. Prepare patients for diagnostic testing, place electrodes or probes, monitor vital signs and waveforms, and stop the procedure if the patient shows distress or a dangerous change. Explain the test, watch for emergencies, and report significant findings immediately to clinical staff.
-12. Track aircraft or vehicle maintenance jobs from release to completion, reshuffle priorities when urgent repairs appear, and keep the work order board current.
-13. Install, troubleshoot, and repair wiring, controls, fire alarms, and power distribution systems in occupied buildings, working from blueprints and test instruments in cramped spaces and at height. Trace faults, replace damaged components, and restore service without interrupting the facility longer than necessary.
-14. Receive, track, store, issue, and move supplies, equipment, and other materials so the right items are available when needed.
-15. Gather, interpret, and present information about organizations, markets, policies, or events for decision makers and the public. Coordinate with others to produce reports, briefings, translations, or media materials that support communication and outreach.
-16. Interview people, gather facts, and prepare reports or recommendations based on findings from legal, safety, or enforcement work.
-17. Analyze technical problems in systems, equipment, or processes and apply engineering or physical science principles to solve them.
-18. Review forms, records, and supporting documents for completeness, accuracy, and compliance with established rules and procedures.
-19. Clean and sanitize work areas, equipment, and facilities to maintain safe and orderly conditions.
-20. Plan, test, inspect, maintain, or improve complex machinery, structures, instruments, or control systems used in government operations.
-21. Collect information, observe conditions, and record findings to support treatment, diagnosis, counseling, or supervision. Use standard tools, tests, interviews, or reports to communicate results to licensed professionals or other staff.
-22. Prepare and deliver clear information to audiences in writing, in person, or through media channels. Tailor the message to different groups and purposes while keeping it accurate and consistent.
-23. Check orders, inventory, and deliveries for accuracy, and keep records or paperwork that support buying, stocking, safeguarding, and distributing government property.
-24. Provide administrative support by organizing information, updating files and systems, preparing correspondence or reports, and helping resolve routine customer or employee issues.
+0. Review claims, laws, and supporting records to decide whether a person gets a benefit, then explain the decision and the reason for it.
+1. Stand at a clinic front desk, check people in, schedule appointments, answer phones, and sort out forms and referrals for the next step in care.
+2. Respond to alarms, enter the scene of a fire or hazardous release, and carry out rescue, suppression, and emergency medical care. Move fast when lives, buildings, or aircraft are in immediate danger.
+3. Review purchase requests, compare vendors and prices, and place orders for supplies, services, or repairs that keep an office or facility running.
+4. Answer callers and emailers who want to know the status of their own case, explain what additional records are needed, and keep each file moving to the next step.
+5. Review pay, travel, and accounting records to find the source of a mismatch, then correct the entries and document the fix. Reconcile ledgers, vouchers, and system reports until the numbers agree.
+6. Guide a taxpayer through a delinquent account, gather financial facts at a home or business, and work out the next step to bring the case into compliance.
+7. Research unfamiliar issues that come up in a disclosure case, pull guidance from multiple sources, and build the record needed for a decision.
+8. Interview people at a border crossing, inspect their documents and belongings, and decide whether they can enter before the line moves on.
+9. Receive shipments, stack and move stock in a warehouse, check counts against paperwork, and keep shelves and storage areas organized for the next issue.
+10. Review complaints and allegations, sort them to the right authority, build case files, and track the follow-up until the report is ready for decision makers.
+11. Handle a steady stream of requests that arrive with deadlines, sorting them by urgency and keeping pace when several cases land at once.
+12. Clean patient rooms, restrooms, and hallways in a medical facility, empty waste, restock supplies, and move from area to area as the shift demands.
+13. Walk a hospital ward, answer call lights, help patients bathe, feed, turn, and move, and report changes in condition to the nurse.
+14. Receive emergency calls, sort out the first facts fast, and send the right units while the radio keeps ringing and the next incident is already waiting.
+15. Inspect a ward or clinic room, prepare and test patient equipment, and act immediately when a reading or procedure shows a health problem.
+16. Track aircraft or equipment work orders from release to completion, reshuffle priorities when urgent repairs appear, and keep the maintenance schedule moving for the shop.
+17. Meet with Veterans or Soldiers who are angry, withdrawn, or in crisis, help them set goals, and connect them to the services and follow-up they need.
+18. Trace wiring, replace breakers and controls, and test circuits in buildings, hangars, or industrial spaces until the system is safe to use again.
+19. Take apart, repair, and reassemble aircraft systems on the flight line, then sign off that the aircraft is ready for the next sortie. Work around engines, hydraulic lines, and tight maintenance deadlines in an aircraft hangar.
+20. Analyze technical systems, materials, or processes to solve engineering and scientific problems and improve how they perform.
+21. Plan, coordinate, and evaluate programs or services that help people learn, improve performance, or use available resources effectively.
+22. Protect natural resources, public property, or people by enforcing rules, preventing hazards, and responding to problems before they escalate.
+23. Interview people, gather facts, and prepare reports or recommendations based on findings from legal, safety, or enforcement work.
+24. Inspect, troubleshoot, repair, and maintain mechanical, electrical, and electronic equipment and systems to keep them operating safely and reliably.
 ```
 
 ### Rating — the response
 
 ```json
 {"ratings": [
-  {"question_id": 0, "score": 0}, {"question_id": 1, "score": 0}, {"question_id": 2, "score": 2},
+  {"question_id": 0, "score": 0}, {"question_id": 1, "score": 2}, {"question_id": 2, "score": 0},
   {"question_id": 3, "score": 0}, {"question_id": 4, "score": 0}, {"question_id": 5, "score": 0},
   {"question_id": 6, "score": 0}, {"question_id": 7, "score": 0}, {"question_id": 8, "score": 0},
-  {"question_id": 9, "score": 0}, {"question_id": 10, "score": 0}, {"question_id": 11, "score": 4},
+  {"question_id": 9, "score": 0}, {"question_id": 10, "score": 0}, {"question_id": 11, "score": 1},
   {"question_id": 12, "score": 0}, {"question_id": 13, "score": 0}, {"question_id": 14, "score": 0},
-  {"question_id": 15, "score": 0}, {"question_id": 16, "score": 0}, {"question_id": 17, "score": 0},
-  {"question_id": 18, "score": 2}, {"question_id": 19, "score": 1}, {"question_id": 20, "score": 0},
-  {"question_id": 21, "score": 4}, {"question_id": 22, "score": 2}, {"question_id": 23, "score": 0},
-  {"question_id": 24, "score": 2}
+  {"question_id": 15, "score": 2}, {"question_id": 16, "score": 0}, {"question_id": 17, "score": 1},
+  {"question_id": 18, "score": 0}, {"question_id": 19, "score": 0}, {"question_id": 20, "score": 0},
+  {"question_id": 21, "score": 0}, {"question_id": 22, "score": 0}, {"question_id": 23, "score": 0},
+  {"question_id": 24, "score": 0}
 ]}
 ```
 
 That array is the profile shipped for series 0620:
 
 ```json
-[0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 2, 1, 0, 4, 2, 0, 2]
+[0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 1, 0, 0, 0, 0, 0, 0, 0]
 ```
 
 ---
@@ -292,9 +292,9 @@ chose 0.148 similarity. Selecting on collapses chose this one.
 ## What the site ships
 
 ```
-25 questions: 14 narrow, 11 broad
-similarity among the 30 biggest hirers : 0.140
-tied pairs                             : 7
+25 questions: 20 narrow, 5 broad
+similarity among the 30 biggest hirers : 0.115
+tied pairs                             : 9
 occupations reachable as a top match   : 263 of 302
 ```
 

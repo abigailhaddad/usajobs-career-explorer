@@ -1,5 +1,5 @@
 {
-  "n_targets": 178,
+  "n_targets": 176,
   "n_candidates": 40,
   "n_kept": 24,
   "mean_similarity_opm_same_targets": 0.16921941204885455,
@@ -55,38 +55,53 @@
       0.893
     ]
   ],
-  "mean_similarity_before": 0.06731034503543377,
-  "mean_similarity_after": 0.04194664743477088,
+  "mean_similarity_before": 0.04448907101040352,
+  "mean_similarity_after": 0.009921248548413008,
   "unresolvable_twins_after": [
     [
       "Contact representative",
-      "Veterans claims examining",
-      0.975
+      "Social insurance administration",
+      0.9
     ],
     [
-      "Contact representative",
-      "Social insurance administration",
-      0.987
+      "General inspection, investigation and compliance",
+      "Customs and border protection",
+      0.819
+    ],
+    [
+      "General inspection, investigation and compliance",
+      "Compliance, inspection and support",
+      0.908
+    ],
+    [
+      "Forestry technician",
+      "Security guard",
+      0.968
+    ],
+    [
+      "Forestry technician",
+      "Fire protection and prevention",
+      0.963
     ],
     [
       "Border patrol enforcement",
       "Customs and border protection",
-      0.959
-    ],
-    [
-      "Contracting",
-      "Management and program analysis",
-      0.853
-    ],
-    [
-      "Customs and border protection",
-      "Compliance, inspection and support",
-      0.825
+      0.891
     ],
     [
       "Veterans claims examining",
       "Social insurance administration",
-      0.988
+      0.833
+    ],
+    [
+      "Human resources assistance",
+      "Social insurance administration",
+      0.881
+    ],
+    [
+      "Security guard",
+      "Fire protection and prevention",
+      0.944
     ]
   ]
 }
