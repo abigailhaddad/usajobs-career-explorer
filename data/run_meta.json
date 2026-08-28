@@ -1,11 +1,5 @@
 {
-  "run_at": "2026-08-28 18:05 UTC",
+  "run_at": "2026-08-28 20:39 UTC",
   "snapshotted": "17 previous tables",
-  "stage 1 (quiz)": "ok",
-  "stage 2 (openings)": "ok",
-  "stage 3 (hires)": "ok",
-  "stage 7 (standards)": "ok",
-  "stage 4 (build)": "ok",
-  "stage 5 (instrument)": "ok",
-  "stage 4 (build), again": "ok"
+  "stage 4 (build)": "ok"
 }

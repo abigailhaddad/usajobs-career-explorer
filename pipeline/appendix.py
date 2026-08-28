@@ -128,7 +128,6 @@ def run(out=None):
                         "duties": d.get("duties") or d.get("summary") or ""}
                        for d in c["sample"]],
             "ratings": [{"i": i, "q": q, "s": scores.get(i)} for i, q in enumerate(questions)],
-            "raw": json.dumps(resp, separators=(",", ":")) if resp else "",
         })
 
     gens = []
@@ -165,7 +164,7 @@ def run(out=None):
 TEMPLATE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Every LLM call behind the quiz</title>
+<title>How the quiz was built</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet">
@@ -243,13 +242,25 @@ TEMPLATE = """<!doctype html>
  .posting p { margin: .3rem 0 0; font-size: .85rem; color: #333; }
  .agency { color: var(--muted); font-size: .78rem; margin-left: .5rem; }
  .ok { color: #2a6f3b; font-weight: 600; } .miss { color: #a33; font-weight: 600; }
- table.ratings { width: 100%; border-collapse: collapse; font-size: .85rem; }
- table.ratings td { padding: .24rem .55rem; border-top: 1px solid #eef0f3; }
- td.s { width: 2.2rem; text-align: center; font-weight: 700; }
- .qid { width: 2.6rem; color: #9aa1ab; font-size: .78rem; text-align: right; }
+ table.ratings { width: 100%; border-collapse: collapse; font-size: .87rem; }
+ table.ratings td { padding: .3rem .55rem; border-top: 1px solid #f2f4f7; line-height: 1.45; }
+ table.ratings tr:first-child td { border-top: 0; }
+ td.s { width: 2.6rem; }
+ .badge { display: inline-block; width: 1.55rem; height: 1.55rem; line-height: 1.55rem;
+          text-align: center; border-radius: 50%; font-size: .78rem; font-weight: 700; }
+ .b0 { background: #f1f3f5; color: #9aa1ab; }
+ .b1 { background: #e8eef7; color: #5b7fb5; }
+ .b2 { background: #d3e0f2; color: #33598f; }
+ .b3 { background: #9dbbe0; color: #14315c; }
+ .b4 { background: var(--navy); color: #fff; }
+ details.zeros { margin-top: .5rem; }
+ .posting details summary, .promptbox summary { cursor: pointer; color: var(--navy);
+        font-size: .8rem; margin-top: .25rem; }
+ .promptbox { margin-top: 1.2rem; }
+ .child-panel h4:first-child { margin-top: 0; }
+ details.zeros summary { cursor: pointer; color: var(--muted); font-size: .8rem; }
  .origin { width: 5rem; color: var(--muted); font-size: .8rem; }
- .s0 { color: #ccd1d8; } .s1 { color: #9aa1ab; } .s2 { color: #444; }
- .s3 { color: var(--navy); } .s4 { color: #fff; background: var(--navy); border-radius: 4px; }
+ .qid { width: 2.6rem; color: #9aa1ab; font-size: .78rem; text-align: right; }
  .item { border-left: 3px solid var(--line); padding-left: .85rem; margin: .7rem 0; }
  .item p { margin: 0; font-size: .85rem; }
  .meta { color: var(--muted); font-size: .76rem; }
@@ -258,7 +269,7 @@ TEMPLATE = """<!doctype html>
 </style></head><body>
 
 <header class="masthead"><div class="wrap">
-  <h1>Every LLM call behind the quiz</h1>
+  <h1>How the quiz was built</h1>
   <p>The questions on the quiz were written by a language model, and every occupation was
   scored by one. This is all of it: the job postings each occupation was described by, the
   exact prompt, and the scores that came back.
@@ -348,19 +359,27 @@ ROWS.forEach((r) => {
 function buildChildContent(r) {
   const postings = r.sample.length
     ? r.sample.map((d) => `<div class="posting"><b>${esc(d.title)}</b>`
-        + `<span class="agency">${esc(d.agency)}</span><p>${esc(d.duties)}</p></div>`).join('')
+        + `<span class="agency">${esc(d.agency)}</span>`
+        + `<details><summary>duties, ${d.duties.length.toLocaleString()} characters</summary>`
+        + `<p>${esc(d.duties)}</p></details></div>`).join('')
     : '<p class="text-muted fst-italic">No posting text available.</p>';
-  const ratings = r.ratings.map((x) =>
-    `<tr><td class="s s${x.s == null ? 0 : x.s}">${x.s == null ? '\\u2014' : x.s}</td>`
-    + `<td class="qid">${x.i}</td><td>${esc(x.q)}</td></tr>`).join('');
+  // Highest first: a column of grey zeros is not what anyone came to read, and
+  // the ones that scored are the reason the job ranked where it did.
+  const scored = r.ratings.filter((x) => x.s > 0).sort((a, b) => b.s - a.s);
+  const zeros = r.ratings.filter((x) => !(x.s > 0));
+  const line = (x) => `<tr><td class="s"><span class="badge b${x.s || 0}">${x.s == null ? '\\u2014' : x.s}</span></td>`
+    + `<td>${esc(x.q)}</td></tr>`;
+  const ratings = `<table class="ratings">${scored.map(line).join('')}</table>`
+    + (zeros.length ? `<details class="zeros"><summary>${zeros.length} scored 0 \\u2014 `
+        + `not part of this job</summary><table class="ratings">${zeros.map(line).join('')}</table></details>` : '');
   return `<div class="child-panel">
+      <h4>What the model said this job involves</h4>${ratings}
+      <h4>The ${r.sample.length} job postings it read</h4>${postings}
+      <details class="promptbox"><summary>The prompt it was sent, ${r.prompt.length.toLocaleString()} characters</summary>
+        <pre>${esc(r.prompt)}</pre></details>
       <p class="meta">${r.paired === 'matched'
         ? '<span class="ok">cache hit</span>' : '<span class="miss">no cached response</span>'}
         \\u00b7 ${esc(r.key)}</p>
-      <h4>Postings sampled for this occupation</h4>${postings}
-      <h4>User prompt, exactly as sent</h4><pre>${esc(r.prompt)}</pre>
-      <h4>Response</h4><table class="ratings">${ratings}</table>
-      ${r.raw ? '<h4>Response, raw</h4><pre>' + esc(r.raw) + '</pre>' : ''}
     </div>`;
 }
 
