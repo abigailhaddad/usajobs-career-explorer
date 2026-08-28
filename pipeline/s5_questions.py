@@ -74,8 +74,8 @@ def _occ_blurb(r, text_by_series=None) -> str:
         if sample:
             out += "\n  What real announcements say the work is:\n" + "\n".join(
                 f"   - {d.get('title','')} ({d.get('agency','')}): "
-                f"{(d.get('duties') or '')[:500]}"
-                for d in sample[:3])
+                f"{d.get('duties') or ''}"
+                for d in sample)
     return out
 
 

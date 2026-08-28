@@ -38,8 +38,14 @@ def _lst(vals):
 
 # How many announcements to pull per series before choosing which to keep, and
 # how many survive. Ranked by length first: a longer duties block says more.
-TEXT_CANDIDATES = 12
-TEXT_KEEP = 3
+#
+# Keeping 3 was leaving evidence unused: the median series has 7 reachable
+# announcements and the big hirers have hundreds, so three postings described
+# occupations the model has to separate on the strength of the description.
+# The candidate pool is wide because near-duplicates are now discarded rather
+# than filling a slot, so the pool has to carry spares.
+TEXT_CANDIDATES = 20
+TEXT_KEEP = 5
 
 
 def _words(s):
@@ -61,9 +67,20 @@ def pick_varied(g, keep=TEXT_KEEP):
     same boilerplate. So compare the text itself and take the spread.
     """
     rows = g.to_dict("records")
+    bags = [_words(r["duties"]) for r in rows]
+
+    # Drop near-identical postings first. Returning early when there are only as
+    # many candidates as slots shipped correctional officer with the same
+    # Interior announcement twice, at an overlap of 1.000, because the early
+    # return skipped the comparison entirely.
+    unique, ubags = [], []
+    for r, b in zip(rows, bags):
+        if all(_overlap(b, ub) < 0.9 for ub in ubags):
+            unique.append(r)
+            ubags.append(b)
+    rows, bags = unique, ubags
     if len(rows) <= keep:
         return rows
-    bags = [_words(r["duties"]) for r in rows]
     chosen = [0]                                   # rows arrive longest-first
     while len(chosen) < keep:
         nxt = min((i for i in range(len(rows)) if i not in chosen),
@@ -199,7 +216,7 @@ def run():
         FROM (
           SELECT {series} AS series, positionTitle AS title,
                  hiringAgencyName AS agency,
-                 substr({duties_expr}, 1, 900) AS duties,
+                 substr({duties_expr}, 1, 6000) AS duties,
                  length({duties_expr}) AS n
           FROM read_parquet([{urls}]), json_each(JobCategories) AS s
           WHERE {reach} AND length({duties_expr}) >= 200

@@ -55,48 +55,38 @@
       0.893
     ]
   ],
-  "mean_similarity_before": 0.06729940535933797,
-  "mean_similarity_after": 0.025592000940117043,
+  "mean_similarity_before": 0.06731034503543377,
+  "mean_similarity_after": 0.04194664743477088,
   "unresolvable_twins_after": [
     [
       "Contact representative",
-      "General legal and kindred administration",
-      0.9
+      "Veterans claims examining",
+      0.975
     ],
     [
-      "Custodial working",
-      "Pharmacy technician",
-      0.836
-    ],
-    [
-      "General inspection, investigation and compliance",
-      "Compliance, inspection and support",
-      0.844
+      "Contact representative",
+      "Social insurance administration",
+      0.987
     ],
     [
       "Border patrol enforcement",
       "Customs and border protection",
-      0.835
+      0.959
+    ],
+    [
+      "Contracting",
+      "Management and program analysis",
+      0.853
     ],
     [
       "Customs and border protection",
       "Compliance, inspection and support",
-      0.862
+      0.825
     ],
     [
       "Veterans claims examining",
       "Social insurance administration",
-      0.852
-    ],
-    [
-      "Police",
-      "Criminal investigating",
-      0.917
-    ],
-    [
-      "General business and industry",
-      "Management and program analysis",
-      0.904
+      0.988
     ]
   ]
 }

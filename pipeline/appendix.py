@@ -186,8 +186,15 @@ def run(out: Path = None):
             f'value="{esc(v)}"><span>{esc(v)}</span><i>{n}</i></label>'
             for v, n in values)
         return (f'<div class="facet"><button class="facet-btn" data-for="{name}">'
-                f'{label} <span class="caret">\u25be</span></button>'
-                f'<div class="facet-menu" id="menu-{name}">{opts}</div></div>')
+                f'{label}<span class="caret">\u25be</span></button>'
+                f'<div class="facet-menu" id="menu-{name}">'
+                f'<div class="facet-title">{label}</div>'
+                f'<input class="facet-search" type="search" placeholder="Search\u2026" '
+                f'data-search="{name}" autocomplete="off">'
+                f'<div class="facet-options">{opts}</div>'
+                f'<div class="facet-buttons">'
+                f'<button class="btn-clear" data-clear="{name}">Clear</button></div>'
+                f'</div></div>')
 
     from collections import Counter
     ag = Counter(a for c in calls for a in
@@ -239,44 +246,70 @@ TEMPLATE = """<!doctype html>
  pre { background: #f7f8fa; border: 1px solid #e6e6e6; border-radius: 6px; padding: .8rem;
        white-space: pre-wrap; word-wrap: break-word; font-size: .78rem; line-height: 1.45; }
  pre.raw { font-size: .72rem; color: #444; }
- .controls { display: flex; gap: .5rem; align-items: center; margin: 1rem 0 .3rem; flex-wrap: wrap; }
- #q { flex: 1; min-width: 14rem; padding: .55rem .8rem; font-size: 1rem;
-      border: 1px solid #ccc; border-radius: 6px; }
- select, button, .facet-btn { padding: .5rem .7rem; font-size: .9rem; border: 1px solid #ccc;
-                  border-radius: 6px; background: #fff; cursor: pointer; }
- .facet-btn.on { border-color: #1a4480; color: #1a4480; font-weight: 600; }
- .caret { color: #888; font-size: .75rem; }
- #count { color: #666; font-size: .85rem; margin: 0; flex: 1; }
- .toggle { font-size: .9rem; color: #444; display: inline-flex; gap: .35rem; align-items: center; }
- .muted { color: #888; font-size: .85rem; }
+ /* Controls — search on its own line, facets under it, chips under those. */
+ #q { width: 100%; padding: .7rem .9rem; font-size: 1rem; border: 1px solid #ccc;
+      border-radius: 9px; margin: 1.2rem 0 .6rem; box-sizing: border-box; }
+ #q:focus { outline: none; border-color: #1a4480; }
+ .facet-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+ .result-row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .2rem 0 1rem; }
+ .spacer { flex: 1; }
+ #count { color: #666; font-size: .85rem; margin: 0; }
+ .toggle { font-size: .85rem; color: #444; display: inline-flex; gap: .4rem;
+           align-items: center; white-space: nowrap; }
+ select, #expand, #collapse { padding: .45rem .7rem; font-size: .85rem; border: 1px solid #ccc;
+                              border-radius: 8px; background: #fff; cursor: pointer; }
+ #expand:hover, #collapse:hover { border-color: #1a4480; color: #1a4480; }
 
- /* Facet menus — multi-select, one open at a time. */
+ /* Facet buttons open a card of checkboxes, one open at a time. */
  .facet { position: relative; }
- .facet-menu { display: none; position: absolute; z-index: 20; top: 110%; left: 0;
-               min-width: 17rem; max-height: 19rem; overflow-y: auto; background: #fff;
-               border: 1px solid #ccc; border-radius: 8px; padding: .35rem;
-               box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+ .facet-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .8rem;
+              font-size: .85rem; font-weight: 600; border: 1px solid #ccc; border-radius: 999px;
+              background: #fff; color: #333; cursor: pointer; white-space: nowrap; }
+ .facet-btn:hover { border-color: #1a4480; color: #1a4480; }
+ .facet-btn.on { background: #1a4480; border-color: #1a4480; color: #fff; }
+ .caret { font-size: .7rem; opacity: .7; }
+ .facet-menu { display: none; position: absolute; z-index: 30; top: calc(100% + .4rem); left: 0;
+               width: 22rem; max-width: 88vw; background: #fff; border-radius: 14px;
+               box-shadow: 0 10px 30px rgba(0,0,0,.22); padding: 1rem; }
  .facet-menu.open { display: block; }
- .facet-menu .opt { display: flex; gap: .5rem; align-items: center; padding: .3rem .45rem;
-                    font-size: .85rem; border-radius: 5px; cursor: pointer; }
+ .facet-title { font-size: .9rem; font-weight: 700; margin-bottom: .7rem; padding-bottom: .6rem;
+                border-bottom: 2px solid #eef3fa; }
+ .facet-search { width: 100%; padding: .5rem .65rem; border: 1px solid #ccc; border-radius: 8px;
+                 font-size: .85rem; margin-bottom: .5rem; box-sizing: border-box; }
+ .facet-search:focus { outline: none; border-color: #1a4480; }
+ .facet-options { display: flex; flex-direction: column; gap: 1px; max-height: 17rem;
+                  overflow-y: auto; }
+ .facet-menu .opt { display: flex; align-items: center; gap: .55rem; padding: .4rem .4rem;
+                    font-size: .85rem; border-radius: 6px; cursor: pointer; }
  .facet-menu .opt:hover { background: #f3f4f6; }
+ /* display:flex above beats the hidden attribute, so say it explicitly. */
+ .facet-menu .opt[hidden] { display: none; }
  .facet-menu .opt span { flex: 1; }
- .facet-menu .opt i { color: #888; font-style: normal; font-size: .78rem; }
+ .facet-menu .opt i { color: #888; font-style: normal; font-size: .78rem; margin-left: auto; }
+ .facet-menu .opt input { width: 15px; height: 15px; accent-color: #1a4480; cursor: pointer; }
+ .facet-buttons { display: flex; justify-content: flex-end; margin-top: .7rem;
+                  padding-top: .6rem; border-top: 1px solid #eee; }
+ .btn-clear { border: 1px solid #ccc; background: #fff; color: #666; padding: .35rem .8rem;
+              border-radius: 8px; cursor: pointer; font-size: .8rem; }
+ .btn-clear:hover { border-color: #1a4480; color: #1a4480; }
 
- /* Filter chips — same shape as the other dashboards. */
- .chip-bar { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center;
-             margin: .5rem 0 .8rem; min-height: 1.9rem; }
- .filter-chip { display: inline-flex; align-items: center; gap: 6px;
-                background: #eef3fa; border: 1px solid #cfe0f5; border-radius: 20px;
-                padding: 3px 10px; font-size: 12px; }
- .filter-chip-label { font-weight: 600; color: #1a4480; }
- .filter-chip-value { max-width: 18rem; overflow: hidden; text-overflow: ellipsis;
+ /* Active filters live in a bar of their own, like the other dashboards. */
+ .filters-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem;
+                min-height: 46px; margin: .7rem 0 .2rem; background: #fafbfc;
+                border: 1px solid #e6e6e6; border-radius: 12px; padding: .5rem .75rem; }
+ .filters-bar-empty { color: #9a9a9a; font-size: .82rem; }
+ .filter-chip { display: inline-flex; align-items: center; gap: 7px; background: #eef3fa;
+                border: 1px solid #1a4480; border-radius: 999px; padding: 4px 6px 4px 12px;
+                font-size: .78rem; color: #1a4480; }
+ .filter-chip-label { font-weight: 700; }
+ .filter-chip-value { max-width: 17rem; overflow: hidden; text-overflow: ellipsis;
                       white-space: nowrap; }
- .filter-chip-remove { cursor: pointer; font-weight: 700; color: #1a4480; width: 16px;
-                       height: 16px; display: flex; align-items: center;
-                       justify-content: center; border-radius: 50%; }
+ .filter-chip-remove { cursor: pointer; font-weight: 700; width: 18px; height: 18px;
+                       display: flex; align-items: center; justify-content: center;
+                       border-radius: 50%; }
  .filter-chip-remove:hover { background: #1a4480; color: #fff; }
- .chip-clear { background: none; border: 0; color: #1a4480; font-size: 12px;
+ .chip-clear { background: none; border: 0; color: #1a4480; font-size: .78rem;
+               cursor: pointer; text-decoration: underline; padding: 0 .3rem; }
                cursor: pointer; text-decoration: underline; padding: 0 .3rem; }
  details.occ, details.gen { border-top: 1px solid #eee; padding: .35rem 0; }
  details.occ summary, details.gen summary { cursor: pointer; display: flex; gap: .6rem;
@@ -315,19 +348,24 @@ key shown is where its response was found, so the pairing is checked rather than
 <h4>System prompt, identical for every occupation</h4>
 <pre>__RATE_SYSTEM__</pre>
 
-<div class="controls">
-  <input id="q" type="search" placeholder="Search occupation or series number…" autocomplete="off">
+<input id="q" type="search" placeholder="Search an occupation or series number…" autocomplete="off">
+
+<div class="facet-row">
   __FACETS__
   <label class="toggle"><input type="checkbox" id="hastext"> Only with posting text</label>
+  <span class="spacer"></span>
   <select id="sort">
     <option value="name">Sort: name</option>
     <option value="hires">Sort: hires per year</option>
   </select>
 </div>
-<div id="chips" class="chip-bar"><span id="chips-empty" class="muted">No filters applied</span></div>
-<div class="controls">
+
+<div id="chips" class="filters-bar"><span id="chips-empty" class="filters-bar-empty">No filters applied</span></div>
+
+<div class="result-row">
   <p id="count"></p>
-  <button id="expand">Expand all shown</button>
+  <span class="spacer"></span>
+  <button id="expand">Expand all</button>
   <button id="collapse">Collapse all</button>
 </div>
 <div id="list">__OCC_ROWS__</div>
@@ -456,6 +494,25 @@ __GEN__
    box.addEventListener('change', () => {
      const set = active[box.dataset.facet];
      if (box.checked) set.add(box.value); else set.delete(box.value);
+     apply();
+   });
+ });
+
+ // Long facet lists (there are a lot of agencies) get their own search.
+ document.querySelectorAll('.facet-search').forEach((box) => {
+   box.addEventListener('input', () => {
+     const needle = box.value.trim().toLowerCase();
+     const menu = document.getElementById('menu-' + box.dataset.search);
+     for (const opt of menu.querySelectorAll('.opt')) {
+       opt.hidden = needle && !opt.textContent.toLowerCase().includes(needle);
+     }
+   });
+ });
+ document.querySelectorAll('.btn-clear').forEach((btn) => {
+   btn.addEventListener('click', () => {
+     const facet = btn.dataset.clear;
+     active[facet].clear();
+     document.querySelectorAll(`input[data-facet="${facet}"]`).forEach((b) => { b.checked = false; });
      apply();
    });
  });
