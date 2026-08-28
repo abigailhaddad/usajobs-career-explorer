@@ -1,7 +1,5 @@
-# Pipeline run — 2026-08-28 13:34 UTC
+# Pipeline run — 2026-08-28 16:05 UTC
 
-- snapshotted: 17 previous tables
-- stage 4 (build): ok
 
 ## Changes since the previous run
 
@@ -38,10 +36,14 @@
 - no changes
 
 ### generated_questions
-- rows: 21 → 21
+- rows: 24 → 24
 - no changes
 
-### generated_profiles
-- rows: 175 → 175
+### family_questions
+- rows: 24 → 24
+- no changes
+
+### mixed_questions
+- rows: 25 → 25
 - no changes
 

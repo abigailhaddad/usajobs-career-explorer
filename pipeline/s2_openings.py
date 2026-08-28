@@ -36,13 +36,49 @@ def _lst(vals):
     return ",".join("'" + str(v).replace("'", "''") + "'" for v in vals)
 
 
+# How many announcements to pull per series before choosing which to keep, and
+# how many survive. Ranked by length first: a longer duties block says more.
+TEXT_CANDIDATES = 12
+TEXT_KEEP = 3
+
+
+def _words(s):
+    return set(re.findall(r"[a-z]{4,}", (s or "").lower()))
+
+
+def _overlap(a, b):
+    """Jaccard word overlap. 1.0 means the two postings say the same thing."""
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
+
+
+def pick_varied(g, keep=TEXT_KEEP):
+    """Keep the longest posting, then the ones least like what is already kept.
+
+    Ranking by length alone returned three copies of the same VA announcement.
+    Deduping by hiring agency is not enough either: two agencies often run the
+    same boilerplate. So compare the text itself and take the spread.
+    """
+    rows = g.to_dict("records")
+    if len(rows) <= keep:
+        return rows
+    bags = [_words(r["duties"]) for r in rows]
+    chosen = [0]                                   # rows arrive longest-first
+    while len(chosen) < keep:
+        nxt = min((i for i in range(len(rows)) if i not in chosen),
+                  key=lambda i: (max(_overlap(bags[i], bags[j]) for j in chosen), i))
+        chosen.append(nxt)
+    return [rows[i] for i in chosen]
+
+
 def _connect():
     con = duckdb.connect()
     con.execute("INSTALL httpfs; LOAD httpfs;")
     # Keep this stage inside a small envelope: the parquets are remote and wide,
     # and the machine this runs on has been tight on disk.
     con.execute("SET enable_progress_bar=false; SET preserve_insertion_order=false;")
-    con.execute("SET threads=4; SET memory_limit='2GB'; SET max_temp_directory_size='1GiB';")
+    con.execute("SET threads=4; SET memory_limit='2GB'; SET max_temp_directory_size='6GiB';")
     con.execute(f"SET temp_directory='{DATA}/.duckdb_tmp';")
     return con
 
@@ -142,19 +178,39 @@ def run():
     # Stage 5 rates occupations from this rather than from a job title, so the
     # ratings are grounded in what postings say instead of the model's
     # impression of the title. Capped hard: 3 postings, truncated, per series.
-    text = con.execute(f"""
-    SELECT series, list({{'title': title, 'summary': summary, 'quals': quals}})[1:3] AS text_sample
-    FROM (
-      SELECT {series} AS series, positionTitle AS title,
-             substr(COALESCE(json_extract_string({D},'$.UserArea.Details.JobSummary'),''), 1, 700) AS summary,
-             substr(COALESCE(json_extract_string({D},'$.QualificationSummary'),''), 1, 900) AS quals,
-             row_number() OVER (PARTITION BY {series}
-                                ORDER BY length(COALESCE(json_extract_string({D},'$.QualificationSummary'),'')) DESC) AS rk
-      FROM read_parquet([{urls}]), json_each(JobCategories) AS s
-      WHERE {reach}
-    ) WHERE rk <= 3 GROUP BY series""").df()
-    text["text_sample"] = text.text_sample.map(
-        lambda v: json.dumps([dict(x) for x in (v if v is not None and not isinstance(v, float) else [])]))
+    #
+    # MajorDuties, not JobSummary. JobSummary is where agencies put recruitment
+    # boilerplate: every VA practical nurse posting led with the student loan
+    # repayment programme and said nothing about nursing, so the model was
+    # rating the occupation on a benefits blurb.
+    # MajorDuties is an array of strings. The [*] form unescapes each element;
+    # casting the whole array to VARCHAR[] instead leaves JSON quotes embedded
+    # in the text, which is what the model then read.
+    duties_expr = (f"array_to_string(json_extract_string({D}, "
+                   f"'$.UserArea.Details.MajorDuties[*]'), ' ')")
+    # One candidate per hiring agency before ranking. Without this the pool is
+    # whoever writes longest: 0620 has DoD, Bureau of Prisons and DOJ postings,
+    # but VA runs 954 of its 1,186 announcements and filled every slot.
+    cands = con.execute(f"""
+    SELECT series, title, agency, duties FROM (
+      SELECT *, row_number() OVER (PARTITION BY series ORDER BY n DESC) AS rk
+      FROM (
+        SELECT *, row_number() OVER (PARTITION BY series, agency ORDER BY n DESC) AS rk_agency
+        FROM (
+          SELECT {series} AS series, positionTitle AS title,
+                 hiringAgencyName AS agency,
+                 substr({duties_expr}, 1, 900) AS duties,
+                 length({duties_expr}) AS n
+          FROM read_parquet([{urls}]), json_each(JobCategories) AS s
+          WHERE {reach} AND length({duties_expr}) >= 200
+        )
+      ) WHERE rk_agency = 1
+    ) WHERE rk <= {TEXT_CANDIDATES}""").df()
+
+    text = (cands.groupby("series")[["title", "agency", "duties"]]
+                 .apply(pick_varied, include_groups=False)
+                 .rename("text_sample").reset_index())
+    text["text_sample"] = text.text_sample.map(json.dumps)
     emit(text, "series_text", "series")
     print(f"  E. posting text: {len(text):,} series sampled")
 

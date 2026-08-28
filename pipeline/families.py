@@ -14,9 +14,8 @@ So: one call per occupation, with candidates SEEDED from text similarity so
 plausible relatives are actually present, and a forced ranking rather than a
 grouping so every call yields signal whether or not a family is there.
 
-    python instrument/llm_families.py [--limit N]
+    Run as part of stage 5: python run.py --stages 5
 """
-import argparse
 import json
 import re
 import sys
@@ -31,10 +30,9 @@ from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import squareform
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS, TfidfVectorizer
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from pipeline import llm, s5_questions as s5  # noqa: E402
+from . import llm, s5_questions as s5
 
-DATA = Path(__file__).resolve().parent.parent / "data"
+from .config import DATA
 N_SEEDED, N_RANDOM = 14, 8
 
 BOILER = ("""experience service meet position positions grade announcement date requirements
@@ -72,10 +70,7 @@ SYSTEM = (
     "willing to return nothing if none of the candidates genuinely fit.")
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--limit", type=int, default=0)
-    a = ap.parse_args()
+def run(limit=0):
     cfg = yaml.safe_load(s5.CONFIG.read_text())
     llm.load_env(cfg["env_file"])
     mc = cfg["model"]
@@ -110,7 +105,7 @@ def main():
     np.fill_diagonal(Tsim, -1)
 
     rng = np.random.default_rng(0)
-    targets = list(range(n))[: a.limit or n]
+    targets = list(range(n))[: limit or n]
     print(f"{n} occupations; asking about {len(targets)}, "
           f"{N_SEEDED} seeded + {N_RANDOM} random candidates each")
 
@@ -172,6 +167,3 @@ def main():
             np.save(DATA / "llm_labels_12.npy", lab)
         print()
 
-
-if __name__ == "__main__":
-    main()

@@ -1,6 +1,6 @@
 """Build items from work families, then measure whether the instrument improves.
 
-The families come from instrument/llm_families.py. They read well and they fixed
+The families come from pipeline/families.py. They read well and they fixed
 the 42% residual, but no external test confirms they are "right" — a work family
 deliberately spans grades and conditions, so behavioural coherence is the wrong
 bar for them. So this stops arguing about the families and tests the only thing
@@ -12,7 +12,7 @@ BOTH, on the same 302 occupations:
   * distinct #1 recommendations across 5,000 takers   (higher is better)
 Beating one and losing the other is a fail, and we keep what is live.
 
-    python instrument/family_items.py
+    Run as part of stage 5: python run.py --stages 5
 """
 import json
 import sys
@@ -24,11 +24,10 @@ import pandas as pd
 import yaml
 from pydantic import BaseModel, Field
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from pipeline import llm, s5_questions as s5  # noqa: E402
-from pipeline.common import emit  # noqa: E402
+from . import llm, s5_questions as s5
+from .common import emit
 
-DATA = Path(__file__).resolve().parent.parent / "data"
+from .config import DATA
 PER_FAMILY = 2
 
 
@@ -69,7 +68,7 @@ def coverage_and_sep(P, hires, names, cfg):
             len(m["unresolvable_twins"]), 100 * float((P == 0).mean()))
 
 
-def main():
+def run():
     cfg = yaml.safe_load(s5.CONFIG.read_text())
     llm.load_env(cfg["env_file"])
     mc = cfg["model"]
@@ -154,6 +153,3 @@ def main():
     prof.insert(0, "series_name", names); prof.insert(0, "series", facts.series)
     emit(prof, "family_profiles_all", "series")
 
-
-if __name__ == "__main__":
-    main()

@@ -16,13 +16,20 @@ Not affiliated with USAJOBS or OPM. The official tool is at
 ## Run it
 
 ```bash
-python run.py        # fetch and rebuild everything; writes data/CHANGES.md
+python run.py        # fetch and rebuild the data; writes data/CHANGES.md
+python run.py --full # the above, plus rebuild the questions, then rebuild the site
 python serve.py      # open the quiz at http://localhost:8899
 ```
 
-Stage 5 rewrites the questions and is opt-in because it calls an LLM:
-`python run.py --stages 5`. Responses are cached in `data/.llm_cache`; a full
-uncached run is about $0.35.
+`--full` runs stages `1,2,3,7,4,5,4`. Stage 4 appears twice on purpose: stage 5
+rates occupations from `series_facts`, which stage 4 builds, and stage 4 writes
+the site payload from the questions, which stage 5 builds. Running stage 5
+against a stale `series_facts` rated 86 of 302 occupations on job titles the
+site no longer showed, and every stage still reported success, so stage 5 now
+refuses to start when `series_facts` is older than its inputs.
+
+Only stage 5 calls an LLM, which is why the plain `python run.py` leaves the
+questions alone. Responses are cached in `data/.llm_cache`.
 
 Two things live outside the repo. Stage 7 reads OPM's qualification standards
 from a checkout of [opm-educ-req](https://github.com/abigailhaddad/opm-educ-req),
@@ -45,9 +52,8 @@ flowchart TD
 
     S4[s4 build<br/>one row per occupation → data.json] --> SITE[site/]
 
-    S2 -.job postings.-> S5[s5 questions<br/>LLM, opt-in]
-    S4 -.hiring volume.-> S5
-    S5 -.the 25 questions.-> S4
+    S4 -.occupations to rate.-> S5
+    S5[s5 instrument, LLM<br/>families → narrow → broad<br/>→ combine → audit] -.the 25 questions.-> S4
 ```
 
 A failed stage keeps its previous output and the run exits non-zero, with
@@ -113,7 +119,16 @@ quiz to tell them apart, and it can't.
 Stage 5 writes its own questions, and scores them the same way: rate every
 occupation 0 to 4 on every question, then compare the 30 biggest hirers to each
 other and average how alike they come out. A lower number means the questions
-pull jobs apart. On the same occupations, that goes from 0.17 to 0.03.
+pull jobs apart.
+
+Average similarity is the wrong thing to optimise, though. Some occupations
+really are alike — nursing assistant and practical nurse hire about the same
+number of people and do much the same work — and a quiz claiming to separate
+them on interest alone is lying. The defect is a tie between occupations whose
+postings describe different work, so `tie_audit.py` compares every tied pair
+against its posting text and only those count. The shipped set has 10 ties among
+the biggest hirers and 2 of them are defects, against 4 for the set it
+replaces.
 
 That number can improve while the quiz gets worse. A 6-question version scored
 better than the 21-question one, because fewer questions give occupations less
@@ -135,14 +150,20 @@ same questions is stable. Then send the pairs that are still tied back to the
 model, asking for questions that would split those specific pairs, and keep that
 round only if the score improves.
 
-The site ends up with 25 questions, 14 specific and 11 broad. The specific ones
-separate the big hirers well, but three of twelve kinds of work had no question
-that spoke to them at all; adding broad questions brings that down to one. Broad
-questions push the similarity number back up, because more occupations get
-similar ratings on them. Everything else improved: ties among the big hirers
-fell from around 20 to around 7, and the number of occupations that can come up
-as someone's top match went from roughly 150 to 210.
+The site ends up with 25 questions, 18 specific and 7 broad. The specific ones
+separate the big hirers; broad ones cover kinds of work the specific items miss.
+Broad questions push the similarity number back up, because more occupations get
+similar ratings on them, and in exchange the quiz can return 263 of the 302
+occupations as somebody's top match. The split is chosen by rating every
+candidate split for real, not by assuming one.
 
-`instrument/` holds the scripts behind that final set. `s4_build` uses
-`mixed_questions.parquet` if it's there, falls back to stage 5's own output, and
-falls back again to the official 32 questions.
+Stage 5 builds all of that in one pass — `pipeline/families.py`,
+`s5_questions.py`, `broad_items.py`, `combine.py`, `tie_audit.py` — so the
+question set the site ships can be rebuilt from the repo. It could not be
+before: the combining step existed nowhere, and the live questions were
+assembled by hand in a session that left no trace.
+
+`combine` chooses the narrow/broad split by rating every candidate split for
+real and keeping the one with the fewest collapses, subject to reaching at least
+250 occupations. Proxy numbers pick which splits are worth rating and nothing
+else — they predicted 0.140 similarity for a split that measured 0.066.

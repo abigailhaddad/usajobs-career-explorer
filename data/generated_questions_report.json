@@ -1,7 +1,7 @@
 {
-  "n_targets": 175,
-  "n_candidates": 36,
-  "n_kept": 21,
+  "n_targets": 178,
+  "n_candidates": 40,
+  "n_kept": 24,
   "mean_similarity_opm_same_targets": 0.16921941204885455,
   "opm_unresolvable_twins": [
     [
@@ -55,88 +55,48 @@
       0.893
     ]
   ],
-  "mean_similarity_before": 0.05153579896758015,
-  "mean_similarity_after": 0.03231357502339466,
+  "mean_similarity_before": 0.06729940535933797,
+  "mean_similarity_after": 0.025592000940117043,
   "unresolvable_twins_after": [
     [
-      "Miscellaneous clerk and assistant",
-      "General business and industry",
-      0.947
-    ],
-    [
-      "Miscellaneous clerk and assistant",
-      "Supply clerical and technician",
-      0.931
+      "Contact representative",
+      "General legal and kindred administration",
+      0.9
     ],
     [
       "Custodial working",
-      "Food service working",
-      1.0
+      "Pharmacy technician",
+      0.836
     ],
     [
       "General inspection, investigation and compliance",
-      "Customs and border protection",
-      0.857
-    ],
-    [
-      "Correctional officer",
-      "Security guard",
-      0.984
+      "Compliance, inspection and support",
+      0.844
     ],
     [
       "Border patrol enforcement",
       "Customs and border protection",
-      0.871
+      0.835
     ],
     [
-      "Contracting",
-      "Miscellaneous administration and program",
-      0.944
-    ],
-    [
-      "Contracting",
-      "Human resources assistance",
-      0.846
-    ],
-    [
-      "Miscellaneous administration and program",
-      "Human resources assistance",
-      0.975
-    ],
-    [
-      "Miscellaneous administration and program",
-      "Human resources management",
-      0.89
+      "Customs and border protection",
+      "Compliance, inspection and support",
+      0.862
     ],
     [
       "Veterans claims examining",
       "Social insurance administration",
-      1.0
+      0.852
     ],
     [
-      "Human resources assistance",
-      "Human resources management",
-      0.969
+      "Police",
+      "Criminal investigating",
+      0.917
     ],
     [
       "General business and industry",
-      "Supply clerical and technician",
-      0.944
-    ],
-    [
-      "General legal and kindred administration",
-      "Human resources management",
-      0.81
-    ],
-    [
-      "General legal and kindred administration",
       "Management and program analysis",
-      1.0
-    ],
-    [
-      "Human resources management",
-      "Management and program analysis",
-      0.81
+      0.904
     ]
   ]
 }

@@ -319,4 +319,11 @@ def run():
         html = _re.sub(rf'{_re.escape(asset)}(\?v=\d+)?', f"{asset}?v={v}", html)
     idx.write_text(html)
     print(f"  wrote site/data.json ({out.stat().st_size/1024:.0f} KB)")
+
+    # The appendix is written from the same tables the payload came from, so it
+    # belongs to the same step. Kept behind a guard because stage 4 also runs
+    # before the instrument exists, on the first pass of a full rebuild.
+    from . import appendix
+    if (DATA / "mixed_questions.parquet").exists():
+        appendix.run()
     return df

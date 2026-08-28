@@ -27,6 +27,17 @@ targets:
   max_series: 200
 
 generation:
+  # The task, stated plainly. This used to open by describing how badly the
+  # official instrument scores, which is neither the model's problem nor stable
+  # — the numbers quoted in it had gone stale.
+  system: >
+    You write items for a career-matching instrument for federal jobs. Each item
+    is one kind of work, and a respondent rates how much they would want to do
+    it. The instrument is only useful when occupations are rated differently
+    from each other: if two jobs score alike on every item, no answer a person
+    gives can tell them apart. Write items that split the occupations you are
+    shown.
+
   n_candidates: 40              # generated per sample, before pruning
   n_final: 24                   # kept after the measured prune
   batch_size: 25                # occupations shown per generation call
@@ -36,7 +47,7 @@ generation:
   # nondeterminism is not to suppress it — it is to draw several instruments and
   # keep the one that measures best. Caching then locks in the winner rather
   # than locking in whatever we happened to draw first.
-  n_samples: 3
+  n_samples: 6
 
   # After selecting the best sample, look at which occupation pairs the
   # instrument still cannot tell apart and generate items aimed at exactly those.
@@ -72,6 +83,12 @@ generation:
     a 17-year-old can react to it. Every item must be one a real federal job would
     answer differently from most others on the list.
 
+    Do not end an item by restating the axis you drew it from. Clauses like
+    "where the wrong call can affect safety", "the main cost of a mistake is lost
+    time or money", "with the same tasks repeated to a standard" or "in a rhythm
+    where one urgent call interrupts the next" read as machine-written and get
+    stripped by hand every time they appear. Describe the work and stop.
+
 rating:
   scale_max: 4                  # 0 = not at all, 4 = central to the job
   prompt: >
@@ -86,7 +103,11 @@ rating:
 # ---------------------------------------------------------------------------
 scoring:
   redundancy_max: 0.80          # drop one of any question pair above this |r|
-  min_hiring_weighted_var: 0.35 # drop items that do not discriminate where hiring is
+  # A floor, not the item budget. At 0.35 this was binding before n_final and
+  # decided the size of the instrument by itself: one run kept 25 items, the
+  # next kept 17 off the same settings. n_final governs how many items ship;
+  # this only throws out items that carry almost nothing.
+  min_hiring_weighted_var: 0.15
   # Calibrated against posting language, not guessed. Four enforcement/compliance
   # occupations sat at 0.85-0.91 instrument similarity while sharing only
   # 0.02-0.09 of their posting text — genuinely different jobs the instrument was

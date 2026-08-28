@@ -72,9 +72,10 @@ def _occ_blurb(r, text_by_series=None) -> str:
     if text_by_series:
         sample = text_by_series.get(r.series, [])
         if sample:
-            out += "\n  What real announcements say about this work:\n" + "\n".join(
-                f"   - {d.get('title','')}: {(d.get('summary') or '')[:400]}"
-                for d in sample[:2])
+            out += "\n  What real announcements say the work is:\n" + "\n".join(
+                f"   - {d.get('title','')} ({d.get('agency','')}): "
+                f"{(d.get('duties') or '')[:500]}"
+                for d in sample[:3])
     return out
 
 
@@ -237,12 +238,7 @@ def run(limit_series: int | None = None, n_candidates: int | None = None,
     # --- 1. generate ------------------------------------------------------
     axes = "\n".join(f"- {a}" for a in gen["axes"])
     system = (
-        "You write items for a career-matching instrument for federal jobs. "
-        "The existing instrument fails because its items do not separate the "
-        "occupations that actually hire: its 30 biggest entry-level hirers sit at "
-        "0.19 mean profile similarity, and pairs like criminal investigating vs "
-        "customs interdiction are indistinguishable to it even though one hires "
-        "thousands and the other hires nobody. Your items must separate real jobs.\n\n"
+        f"{gen['system'].strip()}\n\n"
         f"Draw items from these axes:\n{axes}\n\n{gen['style']}\n\n{gen['avoid']}"
     )
     batches = [tgt.iloc[i:i + gen["batch_size"]]
