@@ -287,7 +287,6 @@ def run():
             "hires_by_year": json.loads(r.hires_by_year),
             "pct_entry_young": None if pd.isna(r.pct_entry_young) else float(r.pct_entry_young),
             "reachable_open_now": int(r.reachable_open_now),
-            "openings_open_now": int(r.openings_open_now),
             "typical_entry_grade": None if pd.isna(r.typical_entry_grade) else int(r.typical_entry_grade),
             "pct_degree_required": float(r.pct_degree_required),
             "degree_requirement": r.degree_requirement,

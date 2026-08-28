@@ -33,7 +33,21 @@ Regenerate with `python run.py`, and `python run.py --stages 5` for the question
 
 `data/series_profiles.parquet` (302 rows × 5 cols) — `series, series_name, ce_description, related_titles, profile`
 
-The official profile for 0620, first six of 32:
+`profile` is 32 numbers, one per question, in `question_id` order. Higher means
+the occupation is more associated with that kind of work. The official numbers
+sit on no fixed scale: for practical nurse they run from −1.95 to +3.03. The
+ratings this project generates are 0–4 instead.
+
+Practical nurse (series 0620), its two highest and two lowest of 32:
+
+| value | q | question |
+|---|---|---|
+| +3.03 | 4 | Provide health care and treatment to patients with various conditions and needs. Perform medical procedures and track patient progress. |
+| +1.19 | 16 | Monitor the quality and safety of food and agriculture products and supplies. Make sure food products are made and processed properly. |
+| −1.28 | 6 | Create, configure and test computer software and hardware. Write programs, conduct analyses and meet design standards. |
+| −1.95 | 23 | Design methods to efficiently and securely store and transport critical supplies and resources. Make sure policies are followed to protect the public and prevent waste. |
+
+As stored, first six of the 32:
 
 ```
 [0.103429791, -0.132386898, -0.000247793, 3.028433097, 0.16298403, -1.277121255, ...]
@@ -80,8 +94,10 @@ series  ann_total  ann_public  ann_reachable  openings_reachable  reachable_open
   0017         58          14              0                   0                   0 recently_active                  NaN
 ```
 
-Series 0007: 83 reachable announcements, 4,597 openings. That is why the site
-counts openings, not announcements.
+`ann_reachable` counts announcements; `openings_reachable` sums their
+`totalOpenings`. The site shows announcements. `totalOpenings` is unreliable —
+exactly 1 per announcement for 40% of series, and 55 per announcement for series
+0007 — so the sums stay in the parquet and are not displayed.
 
 ---
 
@@ -146,11 +162,20 @@ typical_entry_grade      3.0
 tenure_kind              usually permanent
 ```
 
-0.4% of postings state a degree requirement and OPM's standard requires none,
-but `degree_requirement` is `credential`: 9% of practical nurses hold a
-bachelor's, 87% hold some college, and the job needs an LPN diploma. Four
-sources are combined because no single one is reliable — postings restate
-requirements inconsistently, and about 6% of the education field is miscoded.
+`degree_requirement` is `credential` rather than `none`: 9% of practical nurses
+hold a bachelor's, 87% hold some college, and the job needs an LPN diploma.
+
+Four sources are combined because no single one is reliable. The `pct_*` columns
+come from regex over posting text (`pipeline/quals.py`), which federal wording
+defeats routinely by stating requirements in the negative:
+
+> This matters more than it sounds. Federal postings routinely state requirements
+> in the negative — "this position does not have a positive education
+> requirement", "no substitution of education for experience is permitted" — so a
+> naive pattern scores the exact opposite of the truth. Measured before the fix:
+> `degree_required` 5 of 6 hits were false, 4 of them outright negations.
+
+About 6% of the OPM education field is miscoded as well.
 
 Shipped in `site/data.json`:
 
@@ -245,8 +270,7 @@ work of someone hired into this occupation at entry level.
 
 ### Rating — user prompt
 
-One call, cache key `26b559d9bf6b6efa488215fd21b65e10`. Truncated at statement
-8 for length; the real prompt lists all 25.
+One call, in full. Cache key `26b559d9bf6b6efa488215fd21b65e10`.
 
 ```
 Occupation:
@@ -266,7 +290,22 @@ Score every statement 0-4. Return one entry per statement id.
 6. Assist with protecting public lands and facilities by guiding visitors, explaining rules and resources, and helping respond to hazards such as fire, water, or environmental damage.
 7. Inspect food, drugs, toys or household products at plants, warehouses or border points, sampling items and documenting violations before unsafe goods reach the public. What you write up can become a legal case.
 8. Provide direct care and support to patients in a clinical setting, helping with examinations, treatments, and basic comfort needs.
-...
+9. Prepare, handle, and serve food, meals, or related supplies while following basic sanitation and storage procedures.
+10. Work on a flight line or in a hangar, taking apart, troubleshooting, repairing, and reassembling aircraft systems and components until the aircraft is ready to fly again.
+11. Perform hands-on support work to move, maintain, repair, operate, or prepare vehicles, equipment, buildings, grounds, and related materials.
+12. Track down unpaid federal taxes by meeting taxpayers one case at a time, explaining the debt, arranging collection and taking enforcement steps when the law allows.
+13. Monitor natural resources and field conditions, collecting observations, samples, and measurements to support conservation, research, and land management work.
+14. Inspect products, commodities, or materials to determine whether they meet required quality, grade, safety, or condition standards.
+15. Inspect, troubleshoot, repair, and maintain mechanical, electrical, and structural equipment and systems.
+16. Move from one patient area to another, handling people who are already in care and making sure the right sterile instruments, supplies, and equipment reach the right room before the next procedure starts.
+17. Keep a warehouse or commissary stocked by receiving shipments, moving pallets, marking items and putting goods where they can be found quickly, doing the same handling tasks the same way each time.
+18. Process vouchers, receipts and account entries, the same way each time, all day.
+19. Review passport, visa or mariner paperwork line by line and decide whether the request can be approved under the rules. Send back incomplete cases and move the clean ones forward.
+20. Work on a border, checkpoint or inspection line where travelers and shipments must be screened quickly and correctly.
+21. Review one long investigation file at a time, tracing names, transactions, records and patterns across databases to build a case for prosecutors or investigators.
+22. Repair propulsion, rudders, davits and other ship systems in a hangar, dry dock or waterfront maintenance shop. Make sure the vessel can move and operate safely before it goes back out.
+23. Analyze complex technical or scientific problems and turn findings into practical recommendations for decisions, plans, or operations.
+24. Track supplies, equipment, and materials as they are ordered, received, stored, issued, and inventoried.
 ```
 
 ### Rating — response

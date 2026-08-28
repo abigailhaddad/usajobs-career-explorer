@@ -155,7 +155,7 @@ function card(entry, position) {
     <div>${flags}</div>
     <div class="facts">
       <div class="fact"><b>${num(s.hires_per_year)}</b><span class="muted">hired at entry level in a typical year</span></div>
-      <div class="fact"><b>${num(s.reachable_open_now)}</b><span class="muted">openings anyone can apply to right now</span></div>
+      <div class="fact"><b>${num(s.reachable_open_now)}</b><span class="muted">job postings you can apply to right now</span></div>
     </div>
     <details><summary>Job titles and requirements</summary>
       <ul>${titles}</ul>

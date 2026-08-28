@@ -72,10 +72,11 @@ either.
 entry grade — permanent meaning tenure groups 1 and 2. Banded pay plans are left
 out of that count, because on those a low band number means senior, not junior.
 
-**Openings** come from the `usajobs_historical` R2 bucket, counting only
-postings the public, students, or recent graduates can apply to. It counts
-openings rather than announcements, because one announcement can carry hundreds
-of jobs.
+**Postings** come from the `usajobs_historical` R2 bucket, counting only
+announcements the public, students, or recent graduates can apply to. The count
+is of announcements, not of the openings they claim to carry: `totalOpenings` is
+missing or defaulted to 1 for 40% of series, and reads as high as 55 openings per
+announcement elsewhere, so it is not solid enough to show anyone.
 
 **Whether you need a degree** combines four sources — posting text, OPM's
 published standard, what entry hires held, what hires at any grade held — since
