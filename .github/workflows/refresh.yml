@@ -21,10 +21,6 @@ on:
         description: Rebuild every data stage even if no source changed
         type: boolean
         default: false
-  # TEMPORARY (2026-11-01): one test run from the PR branch before merging.
-  # Remove before merge.
-  push:
-    branches: [weekly-refresh]
 
 permissions:
   contents: write
@@ -46,7 +42,7 @@ jobs:
       - run: pip install -r requirements-refresh.txt
 
       - name: Rebuild what changed upstream
-        run: python refresh.py ${{ (inputs.force || github.event_name == 'push') && '--force' || '' }}
+        run: python refresh.py ${{ inputs.force && '--force' || '' }}
 
       - name: Commit if the published data changed
         id: commit
@@ -79,8 +75,11 @@ jobs:
           python - <<'PY' > flags.md
           import json
           flags = json.load(open("refresh_result.json"))["flags"]
-          print("\n\n".join(f"- {f}" for f in flags))
+          if flags:
+              print("\n\n".join(f"- {f}" for f in flags))
           PY
+          # print() of nothing still writes a newline, which once opened an
+          # empty issue; only real flags reach the file now.
           if [ ! -s flags.md ]; then exit 0; fi
           title="Data refresh: needs a local rebuild"
           body="$(cat flags.md)

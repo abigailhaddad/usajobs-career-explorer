@@ -233,7 +233,8 @@ def run():
     ), y AS (SELECT series, unnest(states) AS state FROM x WHERE states IS NOT NULL)
     SELECT series, state, count(*) AS openings FROM y GROUP BY 1, 2""").df()
     geo = (geo.groupby("series")
-              .apply(lambda g: json.dumps(dict(zip(g.state, g.openings.astype(int)))),
+              .apply(lambda g: json.dumps(dict(zip(g.state, g.openings.astype(int))),
+                                         sort_keys=True),  # stable across rebuilds
                      include_groups=False)
               .rename("openings_by_state").reset_index())
     print(f"  F. locations: {len(geo):,} series with open jobs placed")
@@ -257,11 +258,14 @@ def run():
     # but VA runs 954 of its 1,186 announcements and filled every slot.
     cands = con.execute(f"""
     SELECT series, title, agency, duties FROM (
-      SELECT *, row_number() OVER (PARTITION BY series ORDER BY n DESC) AS rk
+      SELECT *, row_number() OVER (PARTITION BY series ORDER BY n DESC, agency) AS rk
       FROM (
-        SELECT *, row_number() OVER (PARTITION BY series, agency ORDER BY n DESC) AS rk_agency
+        SELECT *, row_number() OVER (PARTITION BY series, agency ORDER BY n DESC, cn) AS rk_agency
         FROM (
+          -- cn and agency only break length ties, so identical inputs pick
+          -- the same sample every run
           SELECT {series} AS series, positionTitle AS title,
+                 CAST(usajobsControlNumber AS VARCHAR) AS cn,
                  hiringAgencyName AS agency,
                  substr({duties_expr}, 1, 6000) AS duties,
                  length({duties_expr}) AS n
@@ -269,7 +273,7 @@ def run():
           WHERE {reach} AND {win} AND length({duties_expr}) >= 200
         )
       ) WHERE rk_agency = 1
-    ) WHERE rk <= {TEXT_CANDIDATES}""").df()
+    ) WHERE rk <= {TEXT_CANDIDATES} ORDER BY series, rk""").df()
 
     text = (cands.groupby("series")[["title", "agency", "duties"]]
                  .apply(pick_varied, include_groups=False)
@@ -284,7 +288,7 @@ def run():
     -- every open posting, not the first five: a result should be able to show
     -- the whole list of what you could apply to, and 4,165 rows across 308
     -- series is about 366 KB
-    SELECT series, list({{'id': id, 'title': title, 'closes': closes}} ORDER BY closes) AS live_jobs
+    SELECT series, list({{'id': id, 'title': title, 'closes': closes}} ORDER BY closes, id) AS live_jobs
     FROM (
       SELECT {series} AS series, usajobsControlNumber AS id, positionTitle AS title,
              strftime(CAST(positionCloseDate AS TIMESTAMP), '%Y-%m-%d') AS closes
@@ -311,7 +315,11 @@ def run():
             if k:
                 agg[k] = agg.get(k, 0) + int(c)
         out = []
-        for k, _ in sorted(agg.items(), key=lambda kv: -kv[1]):
+        # Ties broken on the title itself: DuckDB returns rows in no fixed
+        # order, so a count tie used to reorder the card between identical
+        # rebuilds (83 series on 2026-11-01), and the weekly refresh would
+        # have committed and deployed that as a change every week.
+        for k, _ in sorted(agg.items(), key=lambda kv: (-kv[1], kv[0])):
             if any(k in kept or kept in k for kept in out):
                 continue
             out.append(k)
