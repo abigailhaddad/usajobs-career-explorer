@@ -97,12 +97,15 @@ def payload_changed() -> bool:
 
 
 def main() -> int:
+    # --force rebuilds every data stage whatever the fingerprints say (the
+    # workflow's manual-dispatch checkbox).
+    force = "--force" in sys.argv[1:]
     stored = json.loads(SOURCES.read_text()) if SOURCES.exists() else {}
     now = fingerprints()
     stages = [1]
-    if now["openings"] != stored.get("openings") or None in now["openings"].values():
+    if force or now["openings"] != stored.get("openings") or None in now["openings"].values():
         stages.append(2)
-    if now["hires"] != stored.get("hires") or now["hires"] is None:
+    if force or now["hires"] != stored.get("hires") or now["hires"] is None:
         stages.append(3)
     print(f"sources: {json.dumps(now)}")
     print(f"previous: {json.dumps(stored)}")

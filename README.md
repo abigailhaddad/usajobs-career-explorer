@@ -47,7 +47,11 @@ every posting still open, however long ago it opened. A reopened posting is
 counted once, at its latest listing.
 
 The appendix and METHODOLOGY.md describe the question build, so they are
-rewritten only when stage 5 runs, not by the weekly refresh.
+rewritten only when stage 5 runs, not by the weekly refresh. Both are
+committed: the appendix pairs every rating prompt with its cached response,
+and that cache (`data/.llm_cache`) exists only where stage 5 was run. Until
+2026-11-01 the appendix was gitignored and deployed from disk, so the first
+deploy from git dropped it and `/appendix` served the home page.
 
 Two things live outside the repo. Stage 7 reads OPM's qualification standards
 from a checkout of [opm-educ-req](https://github.com/abigailhaddad/opm-educ-req),
