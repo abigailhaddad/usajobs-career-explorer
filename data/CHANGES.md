@@ -1,6 +1,7 @@
-# Pipeline run — 2026-08-28 20:39 UTC
+# Pipeline run — 2026-11-01 18:33 UTC
 
-- snapshotted: 17 previous tables
+- snapshotted: 16 previous tables
+- stage 2 (openings): ok
 - stage 4 (build): ok
 
 ## Changes since the previous run
@@ -14,11 +15,11 @@
 - no changes
 
 ### openings
-- rows: 605 → 605
+- rows: 609 → 609
 - no changes
 
 ### hires
-- rows: 645 → 645
+- rows: 647 → 647
 - no changes
 
 ### series_facts
@@ -30,11 +31,11 @@
 - no changes
 
 ### hires_by_state
-- rows: 9,697 → 9,697
+- rows: 9,752 → 9,752
 - no changes
 
 ### hires_by_month
-- rows: 28,841 → 28,841
+- rows: 29,658 → 29,658
 - no changes
 
 ### generated_questions
