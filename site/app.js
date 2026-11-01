@@ -9,7 +9,7 @@ const SCALE = ['Not interested', 'Slightly interested', 'Moderately interested',
                'Very interested', 'Extremely interested'];
 
 // One owner for mutable state. Nothing else writes to it.
-const state = { questions: [], series: [], answers: [], index: 0, ranked: [] };
+const state = { questions: [], series: [], answers: [], index: 0, ranked: [], asOf: '', windowMonths: 0 };
 
 const $ = (id) => document.getElementById(id);
 
@@ -116,6 +116,12 @@ const FLAG_TONE = {
 };
 
 function num(x) { return Number(x || 0).toLocaleString(); }
+// "2026-11-01" -> "Nov 1, 2026". Parsed as UTC so it doesn't shift a day west.
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US',
+    { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
 
 function card(entry, position) {
   const s = entry.s;
@@ -155,9 +161,10 @@ function card(entry, position) {
     <div>${flags}</div>
     <div class="facts">
       <div class="fact"><b>${num(s.hires_per_year)}</b><span class="muted">hired at entry level in a typical year</span></div>
-      <div class="fact"><b>${num(s.reachable_open_now)}</b><span class="muted">job postings you can apply to right now</span></div>
+      <div class="fact"><b>${num(s.reachable_open_now)}</b><span class="muted">job postings you could apply to${state.asOf ? `, as of ${fmtDate(state.asOf)}` : ''}</span></div>
     </div>
-    <details><summary>Job titles and requirements</summary>
+    <details><summary>Job titles and requirements${state.windowMonths
+      ? ` <span class="muted">(from postings in the last ${state.windowMonths} months)</span>` : ''}</summary>
       <ul>${titles}</ul>
       <table>
         <tr><th>Typical entry grade</th><td>${s.typical_entry_grade === null ? '\u2014' : 'GS-' + s.typical_entry_grade}</td></tr>
@@ -220,6 +227,12 @@ async function boot() {
   const data = await res.json();
   state.questions = data.questions;
   state.series = data.series;
+  // The open-postings counts are a snapshot taken when the data was built, so
+  // the page says when, rather than "right now".
+  state.asOf = data.postings_through || '';
+  state.windowMonths = data.postings_window_months || 0;
+  const asof = $('asof');
+  if (asof && state.asOf) asof.textContent = ` (as of ${fmtDate(state.asOf)})`;
   const g = data.governmentwide || {};
   if (g.per_year) {
     $('trendline').textContent =

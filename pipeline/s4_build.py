@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from .common import emit, pct, titlecase
-from .config import CURRENT_JOBS_YEARS, DATA, HIRE_MONTHS, SITE
+from .config import DATA, HIRE_MONTHS, POSTINGS_WINDOW_MONTHS, SITE
 
 
 def _flags(r):
@@ -21,7 +21,7 @@ def _flags(r):
     if r.status == "never_reachable":
         f.append(("no_open_door",
                   f"Has not posted an entry-level job anyone could apply to "
-                  f"since January {CURRENT_JOBS_YEARS[0]}"))
+                  f"in the last {POSTINGS_WINDOW_MONTHS} months"))
     elif r.status == "dormant":
         f.append(("dormant",
                   f"Nothing anyone could apply to for {r.months_since_reachable:.0f} months"))
@@ -269,6 +269,9 @@ def run():
         # so a re-run picks up new months.
         "hire_window": f"{HIRE_MONTHS[0][:4]}–{(df.window_end.max() or '')[:4]}",
         "postings_through": str(pd.to_datetime(df.last_seen_open).max().date()),
+        # The titles, entry grade and requirement shares describe postings
+        # opened in this many months; the page says so on each card.
+        "postings_window_months": POSTINGS_WINDOW_MONTHS,
         "instrument": "generated" if use_generated else "opm",
         "questions": questions,
         "series": [{
@@ -307,24 +310,39 @@ def run():
     out = SITE / "data.json"
     out.write_text(json.dumps(payload, separators=(",", ":")))
 
-    # Stamp app.js/style.css with their mtimes so a rebuilt site is not served
-    # from a stale browser cache. A cached app.js against fresh data.json throws
-    # errors whose line numbers point at code that is no longer there.
-    import os
+    # Stamp app.js/style.css with a hash of their contents so a rebuilt site is
+    # not served from a stale browser cache. A cached app.js against fresh
+    # data.json throws errors whose line numbers point at code that is no
+    # longer there. A content hash, not the mtime (as until 2026-11-01): a
+    # fresh checkout -- every run of the weekly refresh -- gives every file a
+    # new mtime, so index.html "changed" and the site redeployed every week
+    # whether or not anything had.
+    import hashlib
     import re as _re
     idx = SITE / "index.html"
     html = idx.read_text()
     for asset in ("app.js", "style.css"):
-        v = int(os.path.getmtime(SITE / asset))
-        html = _re.sub(rf'{_re.escape(asset)}(\?v=\d+)?', f"{asset}?v={v}", html)
+        v = hashlib.sha1((SITE / asset).read_bytes()).hexdigest()[:10]
+        html = _re.sub(rf'{_re.escape(asset)}(\?v=[0-9a-f]+)?', f"{asset}?v={v}", html)
     idx.write_text(html)
     print(f"  wrote site/data.json ({out.stat().st_size/1024:.0f} KB)")
+    return df
 
-    # The appendix is written from the same tables the payload came from, so it
-    # belongs to the same step. Kept behind a guard because stage 4 also runs
-    # before the instrument exists, on the first pass of a full rebuild.
+
+def write_docs():
+    """The appendix and METHODOLOGY.md: every rating prompt rebuilt from
+    series_facts + series_text and paired with its cached response.
+
+    Only after the instrument is rebuilt (run.py calls this when stage 5 ran).
+    Until 2026-11-01 stage 4 wrote them on every run, which was harmless while
+    nothing re-ran the data stages on their own. The weekly data refresh
+    (refresh.py) does: it moves hire counts and posting text, so a prompt
+    rebuilt afterwards is one the model never saw, and METHODOLOGY.md, which
+    says "this is the call that produced the response below", printed a fresh
+    prompt over "(no cached response)". Both documents describe the instrument
+    build, so they are written with it and left alone between builds.
+    """
     from . import appendix, methodology
     if (DATA / "mixed_questions.parquet").exists():
         appendix.run()
         methodology.run()
-    return df

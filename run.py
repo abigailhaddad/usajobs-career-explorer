@@ -19,8 +19,7 @@ import argparse
 import sys
 import traceback
 
-from pipeline import (s1_quiz, s2_openings, s3_hiring, s4_build, s5_instrument,
-                      s7_standards)
+from pipeline import s1_quiz, s2_openings, s3_hiring, s4_build, s7_standards
 from pipeline.common import diff_table, snapshot, write_changelog
 
 # Stage 5 is not in the default set: it makes LLM calls, and it is the only
@@ -28,7 +27,14 @@ from pipeline.common import diff_table, snapshot, write_changelog
 # disk, so re-running it after the first time is free and deterministic.
 STAGES = {1: ("quiz", s1_quiz.run), 2: ("openings", s2_openings.run),
           3: ("hires", s3_hiring.run), 4: ("build", s4_build.run),
-          5: ("instrument", s5_instrument.run), 7: ("standards", s7_standards.run)}
+          5: ("instrument", lambda: _instrument()), 7: ("standards", s7_standards.run)}
+
+
+def _instrument():
+    # Imported only when stage 5 runs: it pulls in litellm, which the data-only
+    # refresh (.github/workflows/refresh.yml) neither needs nor installs.
+    from pipeline import s5_instrument
+    s5_instrument.run()
 DEFAULT_STAGES = "1,2,3,7,4"   # 7 before 4: the fact table folds it in
 FULL_STAGES = "1,2,3,7,4,5,4"  # see the module docstring for why 4 runs twice
 
@@ -78,6 +84,10 @@ def main():
                 failed.append(f"{i} ({name})")
                 traceback.print_exc()
                 print(f"  !! stage {i} failed; keeping previous data/{name} output")
+        # The appendix and METHODOLOGY.md describe the instrument build, so they
+        # are rewritten only when the instrument was (see s4_build.write_docs).
+        if 5 in want and not failed:
+            s4_build.write_docs()
 
     sections = []
     if failed:

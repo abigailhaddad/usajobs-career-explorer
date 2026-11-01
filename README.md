@@ -31,6 +31,28 @@ refuses to start when `series_facts` is older than its inputs.
 Only stage 5 calls an LLM, which is why the plain `python run.py` leaves the
 questions alone. Responses are cached in `data/.llm_cache`.
 
+### Weekly refresh
+
+`.github/workflows/refresh.yml` runs `refresh.py` every Monday. It checks each
+source's fingerprint against `data/sources.json`, re-runs the stages whose
+source moved (openings from the usajobs_historical R2 mirror, hires from
+HuggingFace; the quiz is re-read every time), rebuilds the site payload, and
+commits and deploys only if the published numbers changed. It does not rebuild
+the questions (LLM calls) or the OPM standards table (needs the local cache
+below); when either looks out of date it opens an issue instead.
+
+Posting statistics (titles, entry grade, requirement shares) cover postings
+opened in the last 12 months (`POSTINGS_WINDOW_MONTHS`). "Open now" counts
+every posting still open, however long ago it opened. A reopened posting is
+counted once, at its latest listing.
+
+The appendix and METHODOLOGY.md describe the question build, so they are
+rewritten only when stage 5 runs, not by the weekly refresh. Both are
+committed: the appendix pairs every rating prompt with its cached response,
+and that cache (`data/.llm_cache`) exists only where stage 5 was run. Until
+2026-11-01 the appendix was gitignored and deployed from disk, so the first
+deploy from git dropped it and `/appendix` served the home page.
+
 Two things live outside the repo. Stage 7 reads OPM's qualification standards
 from a checkout of [opm-educ-req](https://github.com/abigailhaddad/opm-educ-req),
 expected beside this repo — set `OPM_STANDARDS_CACHE` if it's elsewhere. Stage 5

@@ -1,0 +1,89 @@
+name: Weekly data refresh
+
+# Until 2026-11-01 nothing refreshed the data: the page said "what's open now"
+# from a build two months old. This rebuilds the stages whose upstream moved
+# (see refresh.py), commits only if the published payload changed, and deploys.
+#
+# It deploys itself rather than leaning on deploy.yml: a push made with
+# GITHUB_TOKEN does not trigger other workflows, so deploy.yml would never see
+# this commit.
+#
+# What it will not do on its own, and opens an issue for instead: rebuild the
+# 25-question instrument (LLM calls) or the OPM standards table (needs a local
+# 167 MB cache). Either way the published numbers are still refreshed.
+
+on:
+  schedule:
+    - cron: "0 12 * * 1"   # Mondays 12:00 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild every data stage even if no source changed
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements-refresh.txt
+
+      - name: Rebuild what changed upstream
+        run: python refresh.py ${{ inputs.force && '--force' || '' }}
+
+      - name: Commit if the published data changed
+        id: commit
+        run: |
+          changed=$(python -c "import json; print(str(json.load(open('refresh_result.json'))['payload_changed']).lower())")
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          if [ "$changed" != "true" ]; then
+            echo "Payload unchanged apart from its build date; nothing committed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data site
+          git commit -m "Weekly data refresh $(date -u +%F)" -m "$(cat data/CHANGES.md | head -c 60000)"
+          git push
+
+      - name: Deploy to Cloudflare Pages
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        # The branch name decides production vs preview: main is the live
+        # site, any other branch gets its own preview URL.
+        run: npx --yes wrangler@4 pages deploy site --project-name=usajobs-career-explorer --branch=${{ github.ref_name }} --commit-dirty=true
+
+      - name: Open or update an issue for anything that needs a person
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY' > flags.md
+          import json
+          flags = json.load(open("refresh_result.json"))["flags"]
+          if flags:
+              print("\n\n".join(f"- {f}" for f in flags))
+          PY
+          # print() of nothing still writes a newline, which once opened an
+          # empty issue; only real flags reach the file now.
+          if [ ! -s flags.md ]; then exit 0; fi
+          title="Data refresh: needs a local rebuild"
+          body="$(cat flags.md)
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          n=$(gh issue list --state open --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$title" --body "$body"; fi
