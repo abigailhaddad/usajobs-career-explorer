@@ -6,7 +6,9 @@ whose cache key no longer resolved. Every prompt, sample and number here is read
 from the config, the data and the cache at build time, so the document cannot
 describe a pipeline other than the one that produced it.
 
-Written by stage 4, next to the site payload.
+Written after the instrument is rebuilt (s4_build.write_docs, called by run.py
+when stage 5 runs), not on every stage 4: between instrument builds the data
+refresh moves the facts the prompts are built from.
 """
 import json
 import re

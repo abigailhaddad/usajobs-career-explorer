@@ -25,7 +25,7 @@ import duckdb
 import pandas as pd
 
 from .common import emit
-from .config import (CURRENT_JOBS_YEARS, DATA, ENTRY_MAX_GRADE, GRAD_PATHS, GS_LIKE,
+from .config import (UA, CURRENT_JOBS_YEARS, POSTINGS_WINDOW_MONTHS, DATA, ENTRY_MAX_GRADE, GRAD_PATHS, GS_LIKE,
                      PUBLIC_PATHS, R2_BASE, TRADE_PLANS)
 
 DORMANT_AFTER_MONTHS = 18
@@ -100,10 +100,52 @@ def _connect():
     return con
 
 
+def _published_years():
+    """CURRENT_JOBS_YEARS whose current_jobs file exists on R2. The newest year's
+    file appears with the first posting of that year, so for a few days each
+    January it may not; that year is skipped, out loud, rather than failing the
+    stage or quietly reading nothing."""
+    import urllib.error
+    import urllib.request
+    years = []
+    for y in CURRENT_JOBS_YEARS:
+        # R2's public endpoint 403s Python's default user agent.
+        req = urllib.request.Request(f"{R2_BASE}/current_jobs_{y}.parquet", method="HEAD",
+                                     headers={"User-Agent": UA})
+        try:
+            urllib.request.urlopen(req, timeout=60)
+            years.append(y)
+        except urllib.error.HTTPError as e:
+            if e.code != 404 or y != CURRENT_JOBS_YEARS[-1]:
+                raise
+            print(f"  current_jobs_{y}.parquet is not on R2 yet; reading {years}")
+    return years
+
+
 def run():
     print("stage 2: announcements (R2 current_jobs)")
-    urls = _lst(f"{R2_BASE}/current_jobs_{y}.parquet" for y in CURRENT_JOBS_YEARS)
+    urls = _lst(f"{R2_BASE}/current_jobs_{y}.parquet" for y in _published_years())
     con = _connect()
+    # One row per control number: its latest listing. A reopened announcement
+    # keeps its control number and lands in the file for the year it reopened,
+    # while the old year's file still holds the earlier listing. On 2026-11-01
+    # 285 control numbers sat in both current_jobs_2025 and _2026, every one
+    # with a later open date in 2026, and 166 of them were counted twice inside
+    # the posting window. The superseded rows are found on narrow columns and
+    # dropped with a plain filter: a join against the full key list made DuckDB
+    # buffer the wide descriptor column and run out of its 2 GB.
+    stale = con.execute(f"""
+    SELECT filename, CAST(usajobsControlNumber AS VARCHAR) AS cn
+    FROM read_parquet([{urls}], filename=true)
+    QUALIFY row_number() OVER (PARTITION BY usajobsControlNumber
+                               ORDER BY CAST(positionOpenDate AS TIMESTAMP) DESC, filename DESC) > 1
+    """).df()
+    drop = " OR ".join(
+        f"(filename = '{f}' AND CAST(usajobsControlNumber AS VARCHAR) IN ({_lst(g.cn)}))"
+        for f, g in stale.groupby("filename")) or "false"
+    con.execute(f"CREATE TEMP VIEW jobs AS SELECT * FROM read_parquet([{urls}], filename=true) "
+                f"WHERE NOT ({drop})")
+    print(f"  {len(stale):,} superseded listings of reopened announcements dropped")
 
     public_path = (f"EXISTS (SELECT 1 FROM json_each(HiringPaths) h "
                 f"WHERE json_extract_string(h.value,'$.hiringPath') IN ({_lst(PUBLIC_PATHS)}))")
@@ -123,24 +165,29 @@ def run():
                    f" OR payScale IN ({trades}))")
     reach = f"({public_path}) AND appointmentType='Permanent' AND {entry_grade}"
     openings = "COALESCE(TRY_CAST(totalOpenings AS INT),1)"
+    # The posting statistics cover the last POSTINGS_WINDOW_MONTHS months.
+    # Applied to the tallies, qualification shares, titles and text sample --
+    # not to anything "open now", and not to first/last seen, which are history.
+    win = (f"CAST(positionOpenDate AS TIMESTAMP) >= "
+           f"now() - INTERVAL {POSTINGS_WINDOW_MONTHS} MONTH")
 
     # --- A. counts (no descriptor column touched) --------------------------
     counts = con.execute(f"""
     SELECT {series} AS series,
-      count(*)                                        AS ann_total,
-      count(*) FILTER ({public_path})                    AS ann_public,
-      count(*) FILTER ({gradpath})                    AS ann_gradpath,
-      count(*) FILTER ({reach})                       AS ann_reachable,
-      COALESCE(sum({openings}) FILTER ({reach}),0)    AS openings_reachable,
+      count(*) FILTER ({win})                         AS ann_total,
+      count(*) FILTER ({win} AND {public_path})       AS ann_public,
+      count(*) FILTER ({win} AND {gradpath})          AS ann_gradpath,
+      count(*) FILTER ({win} AND {reach})             AS ann_reachable,
+      COALESCE(sum({openings}) FILTER ({win} AND {reach}),0) AS openings_reachable,
       count(*) FILTER (CAST(positionCloseDate AS TIMESTAMP) > now())           AS open_now,
       count(*) FILTER (CAST(positionCloseDate AS TIMESTAMP) > now() AND {reach}) AS reachable_open_now,
       COALESCE(sum({openings}) FILTER (CAST(positionCloseDate AS TIMESTAMP) > now() AND {reach}),0)
                                                       AS openings_open_now,
       min(CAST(positionOpenDate AS TIMESTAMP)) FILTER ({reach}) AS first_seen_open,
       max(CAST(positionOpenDate AS TIMESTAMP)) FILTER ({reach}) AS last_seen_open,
-      median({grade}) FILTER ({reach})                AS typical_entry_grade,
+      median({grade}) FILTER ({win} AND {reach})      AS typical_entry_grade,
       list(DISTINCT month(CAST(positionOpenDate AS TIMESTAMP))) FILTER ({reach}) AS months_seen
-    FROM read_parquet([{urls}]), json_each(JobCategories) AS s
+    FROM jobs, json_each(JobCategories) AS s
     GROUP BY 1""").df()
     print(f"  A. counts: {len(counts):,} series")
 
@@ -158,8 +205,8 @@ def run():
       SELECT {series} AS series,
              lower(COALESCE(json_extract_string({D},'$.QualificationSummary'),'') || ' ' ||
                    COALESCE(json_extract_string({D},'$.UserArea.Details.Education'),'')) AS txt
-      FROM read_parquet([{urls}]), json_each(JobCategories) AS s
-      WHERE {reach}
+      FROM jobs, json_each(JobCategories) AS s
+      WHERE {reach} AND {win}
     ) GROUP BY series""").df()
     print(f"  B. qualification text: {len(quals):,} series scanned")
 
@@ -169,8 +216,8 @@ def run():
     # someone would enter near the bottom, which is not what the card is for.
     titles = con.execute(f"""
     SELECT {series} AS series, positionTitle AS title, count(*) AS c
-    FROM read_parquet([{urls}]), json_each(JobCategories) AS s
-    WHERE {reach}
+    FROM jobs, json_each(JobCategories) AS s
+    WHERE {reach} AND {win}
     GROUP BY 1, 2""").df()
     # --- F. where the open jobs actually are -------------------------------
     # The state array is projected out BEFORE the row expands. The naive lateral
@@ -181,7 +228,7 @@ def run():
       SELECT {series} AS series,
              from_json(json_extract_string({D}, '$.PositionLocation[*].CountrySubDivisionCode'),
                        '["VARCHAR"]') AS states
-      FROM read_parquet([{urls}]), json_each(JobCategories) AS s
+      FROM jobs, json_each(JobCategories) AS s
       WHERE ({reach}) AND CAST(positionCloseDate AS TIMESTAMP) > now()
     ), y AS (SELECT series, unnest(states) AS state FROM x WHERE states IS NOT NULL)
     SELECT series, state, count(*) AS openings FROM y GROUP BY 1, 2""").df()
@@ -218,8 +265,8 @@ def run():
                  hiringAgencyName AS agency,
                  substr({duties_expr}, 1, 6000) AS duties,
                  length({duties_expr}) AS n
-          FROM read_parquet([{urls}]), json_each(JobCategories) AS s
-          WHERE {reach} AND length({duties_expr}) >= 200
+          FROM jobs, json_each(JobCategories) AS s
+          WHERE {reach} AND {win} AND length({duties_expr}) >= 200
         )
       ) WHERE rk_agency = 1
     ) WHERE rk <= {TEXT_CANDIDATES}""").df()
@@ -241,7 +288,7 @@ def run():
     FROM (
       SELECT {series} AS series, usajobsControlNumber AS id, positionTitle AS title,
              strftime(CAST(positionCloseDate AS TIMESTAMP), '%Y-%m-%d') AS closes
-      FROM read_parquet([{urls}]), json_each(JobCategories) AS s
+      FROM jobs, json_each(JobCategories) AS s
       WHERE {reach} AND CAST(positionCloseDate AS TIMESTAMP) > now()
     ) GROUP BY series""").df()
     con.close()

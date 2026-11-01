@@ -20,7 +20,18 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 # MatchedObjectDescriptor (JobSummary / QualificationSummary / Education);
 # historical_jobs is metadata only, so it is deliberately not used here.
 R2_BASE = "https://pub-317c58882ec04f329b63842c1eb65b0c.r2.dev/data"
-CURRENT_JOBS_YEARS = (2025, 2026)
+# What the posting statistics describe: announcements opened in the last
+# POSTINGS_WINDOW_MONTHS months (2026-11-01; was "since January 2025", a fixed
+# start that kept growing the window and a fixed (2025, 2026) file list that
+# would have stopped seeing new postings on 1 January 2027). "Open now" is not
+# windowed -- an announcement still open is open however long ago it opened --
+# and the first/last-seen history is carried forward across runs (s2_openings).
+# The files read are every year the window touches; a year whose file isn't on
+# R2 yet (the first days of January) is skipped by s2_openings, which says so.
+POSTINGS_WINDOW_MONTHS = 12
+_window_start = (__import__("datetime").date.today()
+                 - __import__("datetime").timedelta(days=POSTINGS_WINDOW_MONTHS * 31))
+CURRENT_JOBS_YEARS = tuple(range(_window_start.year, __import__("datetime").date.today().year + 1))
 
 # Hires: OPM/EHRI accessions on HuggingFace (impactproject/opm-ehri-data).
 HF_BASE = "https://huggingface.co/datasets/impactproject/opm-ehri-data/resolve/main/"

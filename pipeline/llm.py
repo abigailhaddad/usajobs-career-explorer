@@ -12,10 +12,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional, Type, TypeVar
 
-import litellm
 from pydantic import BaseModel
-
-litellm.drop_params = True   # e.g. GPT-5 reasoning models reject temperature
 T = TypeVar("T", bound=BaseModel)
 
 # Responses are cached on disk, keyed by (model, system, prompt, schema).
@@ -63,6 +60,12 @@ def call(prompt: str, system: str, output_model: Type[T], model: str,
     path = CACHE / f"{_key(model, system, prompt, schema)}.json"
     if use_cache and path.exists():
         return output_model(**json.loads(path.read_text()))
+
+    # Imported here, not at the top: stage 4's appendix imports this module for
+    # its helpers, and the weekly data refresh (refresh.yml) runs stage 4
+    # without installing litellm. Only an actual call needs it.
+    import litellm
+    litellm.drop_params = True   # e.g. GPT-5 reasoning models reject temperature
 
     last = None
     for attempt in range(max_retries):
