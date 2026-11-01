@@ -1,7 +1,9 @@
-# Pipeline run — 2026-11-01 18:33 UTC
+# Pipeline run — 2026-11-01 18:39 UTC
 
 - snapshotted: 16 previous tables
+- stage 1 (quiz): ok
 - stage 2 (openings): ok
+- stage 3 (hires): ok
 - stage 4 (build): ok
 
 ## Changes since the previous run
