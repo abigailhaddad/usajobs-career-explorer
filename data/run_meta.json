@@ -1,7 +1,8 @@
 {
-  "run_at": "2026-11-02 21:40 UTC",
+  "run_at": "2026-11-09 22:15 UTC",
   "snapshotted": "16 previous tables",
   "stage 1 (quiz)": "ok",
   "stage 2 (openings)": "ok",
+  "stage 3 (hires)": "ok",
   "stage 4 (build)": "ok"
 }
